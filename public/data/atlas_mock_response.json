@@ -1,0 +1,33 @@
+{
+  "_schema_version": "0.1-placeholder",
+  "_note": "PLACEHOLDER mock response for the atlas click handler. Replace with a precomputed lookup keyed by 0.5° grid cells. See README for the schema this should follow.",
+  "coord": {
+    "lat": 35.0,
+    "lon": 110.0,
+    "_grid_id": "PLACEHOLDER"
+  },
+  "prediction": {
+    "rs_anomaly": 1.18,
+    "rs_anomaly_ci_low": 0.94,
+    "rs_anomaly_ci_high": 1.41,
+    "configuration": "F+NPP",
+    "_note": "Anomaly = predicted Rs / climatological mean Rs. Values > 1 indicate above-average flux."
+  },
+  "shap_top3": [
+    { "feature": "MODIS NPP", "value": 0.42 },
+    { "feature": "Mean annual temperature", "value": 0.27 },
+    { "feature": "Soil organic carbon (0-30 cm)", "value": 0.19 }
+  ],
+  "biome": {
+    "igbp_class": "Mixed forests",
+    "igbp_code": 5
+  },
+  "koppen": {
+    "zone": "Cwa",
+    "label": "Humid subtropical, dry winter"
+  },
+  "distance_km": {
+    "to_nearest_train_site": 132,
+    "to_nearest_us_validation_site": 11820
+  }
+}
