@@ -1,0 +1,203 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-paper: #FAF8F5;
+  --bg-ink: #0E1116;
+  --ink: #0E1116;
+  --ink-soft: #3A4048;
+  --rule: #C8CCD2;
+  --accent: #A4221A;
+  --red-pale: #F4C2A8;
+  --blue: #3F7CAB;
+  --blue-dark: #1F4068;
+  --good: #2C5F2D;
+  --warn: #B85C00;
+  --cream: #F8F4EE;
+}
+
+html,
+body {
+  background-color: var(--bg-paper);
+  color: var(--ink);
+  font-family: Calibri, "Segoe UI", system-ui, sans-serif;
+  font-size: 14pt;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    font-family: Georgia, "Times New Roman", serif;
+    color: var(--ink);
+  }
+
+  h1, h2 {
+    font-weight: 700;
+  }
+
+  h3 {
+    font-weight: 400;
+  }
+
+  ::selection {
+    background-color: var(--accent);
+    color: var(--bg-paper);
+  }
+
+  /* Hairline horizontal rule */
+  hr {
+    border: 0;
+    border-top: 1px solid var(--rule);
+  }
+}
+
+@layer components {
+  .meta-label {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.6875rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .meta-text {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+    color: var(--ink-soft);
+  }
+
+  .body-prose {
+    font-family: Calibri, "Segoe UI", system-ui, sans-serif;
+    font-size: 1.0625rem;
+    line-height: 1.7;
+    max-width: 65ch;
+    color: var(--ink);
+  }
+
+  .body-prose p + p {
+    margin-top: 1.1em;
+  }
+
+  .display-title {
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 700;
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    line-height: 1.05;
+    letter-spacing: -0.015em;
+  }
+
+  .section-title {
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 700;
+    font-size: clamp(1.875rem, 3.5vw, 2.75rem);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+
+  .subtitle {
+    font-family: Georgia, "Times New Roman", serif;
+    font-style: italic;
+    font-size: clamp(1.125rem, 1.75vw, 1.5rem);
+    line-height: 1.4;
+    color: var(--ink-soft);
+  }
+
+  /* Section band: vertical band with consistent inner padding */
+  .section-band {
+    padding-top: clamp(4rem, 9vh, 7rem);
+    padding-bottom: clamp(4rem, 9vh, 7rem);
+  }
+
+  .section-band-tall {
+    min-height: 80vh;
+    padding-top: clamp(4rem, 9vh, 7rem);
+    padding-bottom: clamp(4rem, 9vh, 7rem);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .container-research {
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: clamp(1.5rem, 4vw, 3rem);
+    padding-right: clamp(1.5rem, 4vw, 3rem);
+  }
+
+  .container-narrow {
+    max-width: 760px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: clamp(1.5rem, 4vw, 3rem);
+    padding-right: clamp(1.5rem, 4vw, 3rem);
+  }
+
+  .placeholder-tile {
+    background:
+      repeating-linear-gradient(
+        45deg,
+        rgba(164, 34, 26, 0.04),
+        rgba(164, 34, 26, 0.04) 12px,
+        rgba(164, 34, 26, 0.08) 12px,
+        rgba(164, 34, 26, 0.08) 24px
+      ),
+      var(--cream);
+    border: 1px solid var(--rule);
+    color: var(--ink-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .link-arrow {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.8125rem;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+    border-bottom: 1px solid var(--accent);
+    padding-bottom: 1px;
+    transition: color 120ms ease, border-color 120ms ease;
+  }
+
+  .link-arrow:hover {
+    color: var(--ink);
+    border-color: var(--ink);
+  }
+
+  /* Subtle scroll-fade on scroll for narrative blocks */
+  .reveal {
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 220ms ease-out, transform 220ms ease-out;
+  }
+
+  .reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mapbox GL stylesheet overrides for the research aesthetic */
+.mapboxgl-ctrl-attrib {
+  font-family: "SF Mono", Menlo, Consolas, monospace !important;
+  font-size: 10px !important;
+  background: rgba(250, 248, 245, 0.85) !important;
+}
+
+.mapboxgl-popup-content {
+  font-family: Calibri, "Segoe UI", system-ui, sans-serif !important;
+  border-radius: 0 !important;
+  border: 1px solid var(--rule) !important;
+  box-shadow: 0 4px 24px rgba(14, 17, 22, 0.08) !important;
+}
