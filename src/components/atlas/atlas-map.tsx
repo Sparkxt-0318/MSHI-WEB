@@ -32,6 +32,7 @@ export function AtlasMap() {
     React.useState<AtlasOverlayLayer>('F+NPP');
   const [response, setResponse] = React.useState<AtlasResponse | null>(null);
   const [tokenMissing, setTokenMissing] = React.useState(false);
+  const [mapError, setMapError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (!containerRef.current) return;
@@ -42,16 +43,35 @@ export function AtlasMap() {
 
     mapboxgl.accessToken = TOKEN;
 
-    const map = new mapboxgl.Map({
-      container: containerRef.current,
-      style: STYLE_URL,
-      center: [100, 38], // Asia centroid
-      zoom: 2.6,
-      minZoom: 1.5,
-      attributionControl: true,
-    });
+    let map: mapboxgl.Map;
+    try {
+      map = new mapboxgl.Map({
+        container: containerRef.current,
+        style: STYLE_URL,
+        center: [100, 38], // Asia centroid
+        zoom: 2.6,
+        minZoom: 1.5,
+        attributionControl: true,
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('[mapbox] init failed', err);
+      setMapError(msg);
+      return;
+    }
 
     mapRef.current = map;
+
+    // Surface Mapbox runtime errors (auth failures, blocked styles, CORS, etc.)
+    // instead of letting them disappear into the console.
+    map.on('error', (e) => {
+      const msg =
+        (e?.error && (e.error as Error).message) ||
+        (e as unknown as { message?: string }).message ||
+        'Unknown Mapbox error';
+      console.error('[mapbox]', msg, e);
+      setMapError(msg);
+    });
 
     map.addControl(
       new mapboxgl.NavigationControl({ showCompass: false, visualizePitch: false }),
@@ -141,6 +161,48 @@ export function AtlasMap() {
               (NEXT_PUBLIC_* vars are baked in at build time).
             </li>
           </ol>
+        </div>
+      ) : mapError ? (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-cream p-12 text-center">
+          <p className="meta-label">Atlas · map failed to load</p>
+          <h2 className="mt-4 max-w-2xl font-serif text-3xl font-bold text-ink">
+            The Mapbox map couldn&apos;t initialize.
+          </h2>
+          <p className="mt-4 max-w-xl font-mono text-sm leading-relaxed text-ink-soft">
+            Token is set, but the map reported an error:
+          </p>
+          <pre className="mt-3 max-w-xl whitespace-pre-wrap break-words border border-rule bg-paper px-4 py-3 text-left font-mono text-[0.78rem] text-accent">
+            {mapError}
+          </pre>
+          <p className="mt-6 max-w-xl font-mono text-xs leading-relaxed text-ink-soft">
+            Most common causes:
+          </p>
+          <ol className="mt-3 max-w-xl space-y-1 text-left font-mono text-xs leading-relaxed text-ink-soft">
+            <li>
+              <span className="text-accent">·</span> Token URL restrictions
+              don&apos;t include your Vercel domain — visit{' '}
+              account.mapbox.com/access-tokens, edit the token, and either
+              clear URL restrictions or add{' '}
+              <span className="text-accent">*.vercel.app</span> +{' '}
+              <span className="text-accent">your-custom-domain.com</span>.
+            </li>
+            <li>
+              <span className="text-accent">·</span> Token is missing scopes —
+              a default public token (pk.…) with{' '}
+              <span className="text-accent">styles:read</span>,{' '}
+              <span className="text-accent">tiles:read</span>,{' '}
+              <span className="text-accent">fonts:read</span> is enough.
+            </li>
+            <li>
+              <span className="text-accent">·</span> Token was rotated/revoked
+              after the last build — set the new token in Vercel env vars and
+              redeploy.
+            </li>
+          </ol>
+          <p className="mt-6 max-w-xl font-mono text-[0.7rem] text-ink-soft">
+            Open the browser DevTools console for the full Mapbox error
+            object.
+          </p>
         </div>
       ) : (
         <>
