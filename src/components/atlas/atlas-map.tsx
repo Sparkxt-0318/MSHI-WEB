@@ -123,85 +123,105 @@ export function AtlasMap() {
           </h2>
           <p className="mt-4 max-w-xl font-mono text-sm leading-relaxed text-ink-soft">
             Set <span className="text-accent">NEXT_PUBLIC_MAPBOX_TOKEN</span> in
-            your environment (or in Vercel project settings) and reload. See
-            <span className="ml-1">.env.example</span> for setup details.
+            your environment (or in Vercel project settings) and redeploy.
+            See <span className="ml-1">.env.example</span> for setup details.
           </p>
+          <ol className="mt-6 max-w-xl space-y-1 text-left font-mono text-xs leading-relaxed text-ink-soft">
+            <li>
+              <span className="text-accent">1.</span> Create a public token at
+              account.mapbox.com/access-tokens (free tier is enough).
+            </li>
+            <li>
+              <span className="text-accent">2.</span> Vercel → Project →
+              Settings → Environment Variables, add{' '}
+              <span className="text-accent">NEXT_PUBLIC_MAPBOX_TOKEN</span>.
+            </li>
+            <li>
+              <span className="text-accent">3.</span> Trigger a new deployment
+              (NEXT_PUBLIC_* vars are baked in at build time).
+            </li>
+          </ol>
         </div>
       ) : (
-        <div ref={containerRef} className="absolute inset-0" />
-      )}
+        <>
+          <div ref={containerRef} className="absolute inset-0" />
 
-      {/* Top-right overlay toggle */}
-      <div className="pointer-events-auto absolute left-4 top-4 z-20 flex flex-col gap-2 border border-rule bg-paper/95 p-3 backdrop-blur-sm">
-        <p className="meta-label text-ink-soft">Overlay</p>
-        <div className="flex flex-wrap gap-1">
-          {OVERLAY_LAYERS.map((l) => {
-            const isActive = activeOverlay === l.id;
-            return (
+          {/* Top-left overlay toggle */}
+          <div className="pointer-events-auto absolute left-4 top-4 z-20 flex flex-col gap-2 border border-rule bg-paper/95 p-3 backdrop-blur-sm">
+            <p className="meta-label text-ink-soft">Overlay</p>
+            <div className="flex flex-wrap gap-1">
+              {OVERLAY_LAYERS.map((l) => {
+                const isActive = activeOverlay === l.id;
+                return (
+                  <button
+                    key={l.id}
+                    onClick={() => setActiveOverlay(l.id)}
+                    className={`border px-2 py-1 font-mono text-[0.7rem] uppercase tracking-meta transition-colors ${
+                      isActive
+                        ? 'border-ink bg-ink text-paper'
+                        : 'border-rule bg-paper text-ink-soft hover:border-ink hover:text-ink'
+                    }`}
+                  >
+                    {l.label}
+                    {!l.live ? (
+                      <span className="ml-1 text-[0.55rem] text-accent">·PH</span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-1 font-mono text-[0.6rem] leading-snug text-ink-soft">
+              Only F+NPP is live. Others are placeholders awaiting precomputed
+              rasters.
+            </p>
+          </div>
+
+          {/* Bottom strip: legend + actions */}
+          <div className="pointer-events-auto absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-6 border border-rule bg-paper/95 px-5 py-3 backdrop-blur-sm">
+            <div>
+              <p className="meta-label text-ink-soft">Anomaly</p>
+              <div className="mt-1 flex items-center gap-2">
+                <div
+                  aria-hidden="true"
+                  className="h-2 w-40"
+                  style={{
+                    background:
+                      'linear-gradient(to right, #1F4068 0%, #3F7CAB 25%, #FAF8F5 50%, #F4C2A8 75%, #A4221A 100%)',
+                  }}
+                />
+              </div>
+              <div className="mt-1 flex justify-between font-mono text-[0.6rem] text-ink-soft">
+                <span>0.5</span>
+                <span>1.0</span>
+                <span>1.5</span>
+              </div>
+            </div>
+            <div className="border-l border-rule pl-6">
+              <p className="meta-label text-ink-soft">Sites</p>
               <button
-                key={l.id}
-                onClick={() => setActiveOverlay(l.id)}
-                className={`border px-2 py-1 font-mono text-[0.7rem] uppercase tracking-meta transition-colors ${
-                  isActive
-                    ? 'border-ink bg-ink text-paper'
-                    : 'border-rule bg-paper text-ink-soft hover:border-ink hover:text-ink'
-                }`}
+                className="mt-1 border border-rule px-2 py-1 font-mono text-[0.65rem] uppercase tracking-meta text-ink-soft hover:border-ink hover:text-ink"
+                disabled
+                title="Visual toggle, not yet wired"
               >
-                {l.label}
-                {!l.live ? (
-                  <span className="ml-1 text-[0.55rem] text-accent">·PH</span>
-                ) : null}
+                Toggle density
               </button>
-            );
-          })}
-        </div>
-        <p className="mt-1 font-mono text-[0.6rem] leading-snug text-ink-soft">
-          Only F+NPP is live. Others are placeholders awaiting precomputed
-          rasters.
-        </p>
-      </div>
-
-      {/* Bottom strip: legend + actions */}
-      <div className="pointer-events-auto absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-6 border border-rule bg-paper/95 px-5 py-3 backdrop-blur-sm">
-        <div>
-          <p className="meta-label text-ink-soft">Anomaly</p>
-          <div className="mt-1 flex items-center gap-2">
-            <div
-              aria-hidden="true"
-              className="h-2 w-40"
-              style={{
-                background:
-                  'linear-gradient(to right, #1F4068 0%, #3F7CAB 25%, #FAF8F5 50%, #F4C2A8 75%, #A4221A 100%)',
-              }}
-            />
+            </div>
+            <button
+              className="ml-2 inline-flex items-center gap-1.5 border border-rule px-2.5 py-1.5 font-mono text-[0.65rem] uppercase tracking-meta text-ink-soft hover:border-ink hover:text-ink"
+              disabled
+              title="Screenshot — not yet wired"
+            >
+              <Camera className="h-3 w-3" />
+              Screenshot
+            </button>
           </div>
-          <div className="mt-1 flex justify-between font-mono text-[0.6rem] text-ink-soft">
-            <span>0.5</span>
-            <span>1.0</span>
-            <span>1.5</span>
-          </div>
-        </div>
-        <div className="border-l border-rule pl-6">
-          <p className="meta-label text-ink-soft">Sites</p>
-          <button
-            className="mt-1 border border-rule px-2 py-1 font-mono text-[0.65rem] uppercase tracking-meta text-ink-soft hover:border-ink hover:text-ink"
-            disabled
-            title="Visual toggle, not yet wired"
-          >
-            Toggle density
-          </button>
-        </div>
-        <button
-          className="ml-2 inline-flex items-center gap-1.5 border border-rule px-2.5 py-1.5 font-mono text-[0.65rem] uppercase tracking-meta text-ink-soft hover:border-ink hover:text-ink"
-          disabled
-          title="Screenshot — not yet wired"
-        >
-          <Camera className="h-3 w-3" />
-          Screenshot
-        </button>
-      </div>
 
-      <AtlasDetailPanel response={response} onClose={() => setResponse(null)} />
+          <AtlasDetailPanel
+            response={response}
+            onClose={() => setResponse(null)}
+          />
+        </>
+      )}
     </div>
   );
 }
