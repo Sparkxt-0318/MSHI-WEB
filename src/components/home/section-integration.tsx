@@ -35,7 +35,7 @@ export function SectionIntegration() {
           <Reveal className="md:col-span-7" delayMs={200}>
             <div className="body-prose">
               <p>
-                The atlas is not a finished product; it is a uncertainty map.
+                The atlas is not a finished product; it is an uncertainty map.
                 Köppen-Geiger stratification of the prediction error reveals a
                 consistent pattern: transfer R² is highest in temperate
                 Köppen&nbsp;C climates that dominate both the Asian training
