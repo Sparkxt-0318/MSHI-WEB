@@ -12,8 +12,22 @@ import { Camera } from 'lucide-react';
 // MapLibre talks to it through the `pmtiles://` protocol registered below.
 const FNPP_PMTILES_URL = 'pmtiles:///tiles/mshi_f_npp_anomaly.pmtiles';
 
-// Free MapLibre demo style. Replace later if a custom basemap is desired.
-const BASEMAP_STYLE = 'https://demotiles.maplibre.org/style.json';
+// Minimal inline basemap style. We don't depend on any external style/tile
+// CDN: the F+NPP raster *is* the visualization. Country outlines can be
+// layered on later via a vector source if desired. Keeping the basemap
+// self-contained also means no CORS / cert-chain failure modes during
+// the Vercel cold start.
+const BASEMAP_STYLE: maplibregl.StyleSpecification = {
+  version: 8,
+  sources: {},
+  layers: [
+    {
+      id: 'background',
+      type: 'background',
+      paint: { 'background-color': '#0E1116' },
+    },
+  ],
+};
 
 // Register the PMTiles protocol exactly once at module load. MapLibre's
 // addProtocol is a global registry, so re-registering on every mount would
@@ -107,6 +121,14 @@ export function AtlasMap() {
       'bottom-right',
     );
 
+    // The container can mount at 0 height (vh-based parent not yet measured),
+    // which leaves MapLibre with a 1440x300 default canvas. A ResizeObserver
+    // catches the post-mount layout and keeps the globe filling the page.
+    const resizeObs = new ResizeObserver(() => {
+      map.resize();
+    });
+    resizeObs.observe(containerRef.current);
+
     map.on('load', () => {
       map.addSource(FNPP_SOURCE_ID, {
         type: 'raster',
@@ -146,6 +168,7 @@ export function AtlasMap() {
     });
 
     return () => {
+      resizeObs.disconnect();
       map.remove();
       mapRef.current = null;
     };
@@ -189,7 +212,16 @@ export function AtlasMap() {
         </div>
       ) : (
         <>
-          <div ref={containerRef} className="absolute inset-0" />
+          <div
+            ref={containerRef}
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              bottom: 0,
+              left: 0,
+            }}
+          />
 
           {/* Top-left overlay toggle */}
           <div className="pointer-events-auto absolute left-4 top-4 z-20 flex flex-col gap-2 border border-rule bg-paper/95 p-3 backdrop-blur-sm">
