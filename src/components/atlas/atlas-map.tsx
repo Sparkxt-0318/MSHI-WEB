@@ -12,16 +12,12 @@ import { Camera } from 'lucide-react';
 // MapLibre talks to it through the `pmtiles://` protocol registered below.
 const FNPP_PMTILES_URL = 'pmtiles:///tiles/mshi_f_npp_anomaly.pmtiles';
 
-// Minimal inline basemap style. We don't depend on any external style/tile
-// CDN: the F+NPP raster *is* the visualization. Country outlines can be
-// layered on later via a vector source if desired. Keeping the basemap
-// self-contained also means no CORS / cert-chain failure modes during
-// the Vercel cold start.
-//
-// `background-color` is fully transparent so the "space" area outside the
-// globe falls through to the container div's CSS radial gradient
-// (NASA-Worldview-ish deep navy). Inside the globe, the F+NPP raster paints
-// over the same transparent backdrop.
+// Minimal inline basemap style. The F+NPP raster *is* the visualization;
+// the basemap stays self-contained to avoid CORS/cert failure modes on
+// Vercel cold start. `background-color` is transparent so the page's cream
+// shows through inside MapLibre's canvas wherever no layer paints — the
+// dark "space" surrounding the sphere is rendered by MapLibre's sky API
+// (see setSky call in style.load), not by a CSS rectangle behind the canvas.
 const BASEMAP_STYLE: maplibregl.StyleSpecification = {
   version: 8,
   sources: {},
@@ -33,11 +29,6 @@ const BASEMAP_STYLE: maplibregl.StyleSpecification = {
     },
   ],
 };
-
-// Background shown behind the WebGL canvas. Visible only outside the globe
-// sphere (where MapLibre draws transparent pixels in globe projection).
-const SPACE_GRADIENT =
-  'radial-gradient(ellipse at center, #0a1628 0%, #0a1628 35%, #1e3a5f 100%)';
 
 // Register the PMTiles protocol exactly once at module load. MapLibre's
 // addProtocol is a global registry, so re-registering on every mount would
@@ -171,6 +162,25 @@ export function AtlasMap() {
         map.setProjection({ type: 'globe' });
       } catch (err) {
         console.warn('[maplibre] globe projection unavailable', err);
+      }
+      // Paint the "space" surrounding the sphere via MapLibre's sky API
+      // rather than a CSS rectangle on the container — the latter looked
+      // like a filled rectangle instead of a planet floating in a dark
+      // void. With globe projection + sky, the dark halo is only visible
+      // where the sphere isn't, and the page's cream background shows in
+      // the rest of the container.
+      try {
+        map.setSky({
+          'sky-color': '#0a1628',
+          'horizon-color': '#1e3a5f',
+          'fog-color': '#0a1628',
+          'sky-horizon-blend': 1.0,
+          'horizon-fog-blend': 1.0,
+          'fog-ground-blend': 0.0,
+          'atmosphere-blend': 1.0,
+        });
+      } catch (err) {
+        console.warn('[maplibre] sky unavailable', err);
       }
     });
 
@@ -323,7 +333,7 @@ export function AtlasMap() {
               right: 0,
               bottom: 0,
               left: 0,
-              background: SPACE_GRADIENT,
+              background: 'transparent',
             }}
           />
 
