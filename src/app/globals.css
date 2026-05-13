@@ -188,13 +188,15 @@ body {
   }
 }
 
-/* Mapbox GL stylesheet overrides for the research aesthetic */
+/* MapLibre GL stylesheet overrides for the research aesthetic */
+.maplibregl-ctrl-attrib,
 .mapboxgl-ctrl-attrib {
   font-family: "SF Mono", Menlo, Consolas, monospace !important;
   font-size: 10px !important;
   background: rgba(250, 248, 245, 0.85) !important;
 }
 
+.maplibregl-popup-content,
 .mapboxgl-popup-content {
   font-family: Calibri, "Segoe UI", system-ui, sans-serif !important;
   border-radius: 0 !important;
