@@ -22,6 +22,7 @@ export interface AtlasResponse {
     to_nearest_train_site: number;
     to_nearest_us_validation_site: number;
   };
+  name?: string;
   _schema_version?: string;
   _note?: string;
 }
