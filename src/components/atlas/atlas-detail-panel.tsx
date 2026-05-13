@@ -19,7 +19,7 @@ interface AtlasDetailPanelProps {
 export function AtlasDetailPanel({ response, onClose }: AtlasDetailPanelProps) {
   if (!response) return null;
 
-  const { coord, prediction, shap_top3, biome, koppen, distance_km } = response;
+  const { coord, name, prediction, shap_top3, biome, koppen, distance_km } = response;
 
   const shapChartData = shap_top3.map((s) => ({
     name: s.feature,
@@ -33,7 +33,7 @@ export function AtlasDetailPanel({ response, onClose }: AtlasDetailPanelProps) {
       className="absolute right-0 top-0 z-30 flex h-full w-full max-w-md flex-col overflow-y-auto border-l border-rule bg-paper shadow-2xl animate-fade-in"
     >
       <div className="flex items-center justify-between border-b border-rule px-6 py-4">
-        <p className="meta-label">Atlas · grid cell</p>
+        <p className="meta-label">Atlas · {name ? 'location' : 'grid cell'}</p>
         <button
           onClick={onClose}
           className="text-ink-soft transition-colors hover:text-accent"
@@ -44,12 +44,26 @@ export function AtlasDetailPanel({ response, onClose }: AtlasDetailPanelProps) {
       </div>
 
       <div className="flex-1 px-6 py-6">
-        <p className="font-mono text-[0.72rem] uppercase tracking-meta text-ink-soft">
-          Coordinate
-        </p>
-        <p className="mt-1 font-serif text-xl font-bold text-ink">
-          {coord.lat.toFixed(3)}°N, {coord.lon.toFixed(3)}°E
-        </p>
+        {name ? (
+          <>
+            <p className="font-mono text-[0.72rem] uppercase tracking-meta text-ink-soft">
+              Location
+            </p>
+            <p className="mt-1 font-serif text-xl font-bold text-ink">{name}</p>
+            <p className="mt-2 font-mono text-[0.65rem] text-ink-soft">
+              {coord.lat.toFixed(3)}°N, {coord.lon.toFixed(3)}°E
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="font-mono text-[0.72rem] uppercase tracking-meta text-ink-soft">
+              Coordinate
+            </p>
+            <p className="mt-1 font-serif text-xl font-bold text-ink">
+              {coord.lat.toFixed(3)}°N, {coord.lon.toFixed(3)}°E
+            </p>
+          </>
+        )}
 
         <hr className="my-6 border-rule" />
 

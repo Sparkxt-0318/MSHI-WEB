@@ -85,9 +85,9 @@ const ASIA_CITY_PINS: ReadonlyArray<{
   { name: 'Jakarta', code: 'JK', lat: -6.2, lon: 106.8 },
 ];
 
-function createCityPinElement(code: string): HTMLDivElement {
+function createCityPinElement(name: string): HTMLDivElement {
   const wrap = document.createElement('div');
-  wrap.setAttribute('data-mshi-city-pin', code);
+  wrap.setAttribute('data-mshi-city-pin', name);
   wrap.style.cssText = [
     'display:flex',
     'align-items:center',
@@ -110,7 +110,7 @@ function createCityPinElement(code: string): HTMLDivElement {
   ].join(';');
 
   const label = document.createElement('span');
-  label.textContent = code;
+  label.textContent = name;
   label.style.cssText = [
     'font-family:"SF Mono", Menlo, Consolas, monospace',
     'font-size:10px',
@@ -211,7 +211,7 @@ export function AtlasMap() {
     // clicks. Every call returns the same mock record with the supplied
     // coordinate spliced in.
     // Night 3+: look up by 0.5° grid cell in a real precomputed table.
-    const showDetailAt = async (lat: number, lon: number) => {
+    const showDetailAt = async (lat: number, lon: number, cityName?: string) => {
       try {
         const r = await fetch('/data/atlas_mock_response.json');
         const json = (await r.json()) as AtlasResponse;
@@ -222,6 +222,7 @@ export function AtlasMap() {
             lat: +lat.toFixed(3),
             lon: +lon.toFixed(3),
           },
+          ...(cityName && { name: cityName }),
         };
         setResponse(enriched);
       } catch (err) {
@@ -251,11 +252,11 @@ export function AtlasMap() {
       // glyphs/font dependency a symbol+text-layer would require, and they
       // get free occlusion behind the globe in MapLibre 5's globe projection.
       for (const city of ASIA_CITY_PINS) {
-        const el = createCityPinElement(city.code);
+        const el = createCityPinElement(city.name);
         el.title = `${city.name} (${city.lat.toFixed(1)}°, ${city.lon.toFixed(1)}°)`;
         el.addEventListener('click', (ev) => {
           ev.stopPropagation();
-          void showDetailAt(city.lat, city.lon);
+          void showDetailAt(city.lat, city.lon, city.name);
         });
         const marker = new maplibregl.Marker({ element: el, anchor: 'left' })
           .setLngLat([city.lon, city.lat])
