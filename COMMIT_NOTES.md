@@ -1,6 +1,62 @@
-# COMMIT_NOTES — atlas navy scope + city/country search
+# COMMIT_NOTES — atlas navy scope + city/country search + restore globe space navy
 
-**Branch:** `claude/atlas-navy-scope-and-search`
+---
+
+## Fix 3 — restore navy globe space (the void around the sphere)
+
+### Diagnostic findings
+
+**What was changed in Fix 1 (commit 3f0a703):**
+- Removed `const SPACE_GRADIENT = 'radial-gradient(...#0a1628...)'` definition
+- Removed `background: SPACE_GRADIENT` inline style from the map container div
+- Set container `background: 'transparent'`
+- Added `map.setSky({...})` call in `style.load` with navy sky colors
+
+**Why the fix partially failed:**
+The `setSky()` approach was supposed to paint navy in the globe atmosphere.
+However, MapLibre 5.24's globe-projection atmosphere is too subtle to register
+at zoom 2.0; no visible navy halo appears around the sphere. The comment in
+the code correctly noted this limitation, but said the dark halo "should be
+only where the sphere isn't" — but the user is now seeing cream everywhere
+around the sphere (the page background bleeding through the transparent map
+container).
+
+**Root cause of the regression:**
+The background layer in BASEMAP_STYLE was set to fully transparent
+(`background-color: 'rgba(0,0,0,0)'`). Removing the CSS gradient from the
+container meant there's *no* navy source anywhere to paint the space, so
+MapLibre renders transparent pixels and the page cream shows through.
+
+**Correct approach:**
+Instead of relying on MapLibre's subtle `setSky()` atmosphere to paint the
+space, set the basemap's background layer to navy directly. The background
+layer is already in the style spec but transparent — change its paint property
+to navy `#0a1628`. This is simpler and more reliable than `setSky()` and
+gives crisp, visible navy space around the sphere.
+
+### What the fix does
+
+- Change BASEMAP_STYLE's background layer paint from `'background-color': 'rgba(0,0,0,0)'` to `'background-color': '#0a1628'`
+- This ensures the space inside MapLibre's render is navy (Region B)
+- The page background (Region A) stays cream because it's outside the absolutely-positioned map container
+- The sphere overlay (Region C) is unchanged
+
+### Files modified
+
+- `src/components/atlas/atlas-map.tsx` (one line change in BASEMAP_STYLE)
+- `COMMIT_NOTES.md` (this entry)
+
+### Self-validation
+
+- pnpm typecheck clean
+- pnpm build clean
+- Headless screenshot pixel tests:
+  * Page background (50px from top, center): R > 240, G > 240, B > 235 (cream) ✓
+  * Globe space (100px from left, vertical center): B > R + 30, B > G + 20 (navy) ✓
+
+---
+
+## Fix 1 — properly scope navy to MapLibre sky, restore cream page bg
 (forked off `claude/atlas-aesthetic-polish` because origin/main does not
 exist in this remote; that branch is the head of the line and already
 contains the location-aware-panel Fix 3 changes).
