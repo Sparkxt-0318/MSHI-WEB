@@ -1,0 +1,89 @@
+{
+  "url": "http://localhost:3000/atlas",
+  "httpStatus": 200,
+  "canvasFound": true,
+  "screenshot": "test_screenshots/atlas_local.png",
+  "consoleErrors": [],
+  "pageErrors": [],
+  "pmtilesRequests": [
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    }
+  ],
+  "pixels": {
+    "width": 1440,
+    "height": 900,
+    "red": 27983,
+    "blue": 7495,
+    "redCentroid": [
+      879.0556409248472,
+      235.37072508308617
+    ],
+    "blueCentroid": [
+      611.6464309539693,
+      364.123949299533
+    ],
+    "centroidDistancePx": 297
+  }
+}

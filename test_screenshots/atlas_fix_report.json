@@ -1,0 +1,93 @@
+{
+  "url": "http://localhost:3000/atlas",
+  "httpStatus": 200,
+  "canvasFound": true,
+  "screenshot": "test_screenshots/atlas_local_fixed.png",
+  "consoleErrors": [],
+  "pageErrors": [],
+  "pmtilesRequests": [
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    },
+    {
+      "url": "http://localhost:3000/tiles/mshi_f_npp_anomaly.pmtiles",
+      "status": 206
+    }
+  ],
+  "pixels": {
+    "width": 1440,
+    "height": 900,
+    "red": 5608,
+    "blue": 3193,
+    "redCentroid": [
+      730.3614479315264,
+      342.58416547788875
+    ],
+    "blueCentroid": [
+      661.2683996241778,
+      432.5994362668337
+    ],
+    "centroidDistancePx": 113
+  }
+}
