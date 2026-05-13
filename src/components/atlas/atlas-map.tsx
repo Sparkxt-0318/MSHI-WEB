@@ -29,10 +29,9 @@ const FNPP_PMTILES_URL = 'pmtiles:///tiles/mshi_f_npp_anomaly.pmtiles';
 
 // Minimal inline basemap style. The F+NPP raster *is* the visualization;
 // the basemap stays self-contained to avoid CORS/cert failure modes on
-// Vercel cold start. `background-color` is transparent so the page's cream
-// shows through inside MapLibre's canvas wherever no layer paints — the
-// dark "space" surrounding the sphere is rendered by MapLibre's sky API
-// (see setSky call in style.load), not by a CSS rectangle behind the canvas.
+// Vercel cold start. The background layer paints navy to create the "space"
+// effect around the 3D sphere, giving visual context to the globe without
+// needing a CSS background on the page or map container.
 const BASEMAP_STYLE: maplibregl.StyleSpecification = {
   version: 8,
   sources: {},
@@ -40,7 +39,7 @@ const BASEMAP_STYLE: maplibregl.StyleSpecification = {
     {
       id: 'background',
       type: 'background',
-      paint: { 'background-color': 'rgba(0,0,0,0)' },
+      paint: { 'background-color': '#0a1628' },
     },
   ],
 };
