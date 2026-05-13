@@ -6,6 +6,12 @@ import { Protocol as PMTilesProtocol } from 'pmtiles';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { AtlasDetailPanel } from './atlas-detail-panel';
 import type { AtlasOverlayLayer, AtlasResponse } from './atlas-mock-types';
+import {
+  loadLookup,
+  lookupCellSync,
+  cellToResponse,
+  noPredictionResponse,
+} from './atlas-lookup';
 import { Camera, Search } from 'lucide-react';
 
 // Asia training-domain bounding box for the F+NPP model. Any geocoded
@@ -142,11 +148,15 @@ export function AtlasMap() {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [searchError, setSearchError] = React.useState<string | null>(null);
   const [searching, setSearching] = React.useState(false);
+  const [lookupReady, setLookupReady] = React.useState(false);
+  const [lookupError, setLookupError] = React.useState<string | null>(null);
 
-  // PLACEHOLDER click handler shared by globe clicks, city-pin clicks,
-  // and search results. Every call returns the same mock record with the
-  // supplied coordinate spliced in. Night 3+: look up by 0.5° grid cell
-  // in a real precomputed table.
+  // Click handler shared by globe clicks, city-pin clicks, and search
+  // results. Snaps to the nearest 0.5° cell in /data/atlas_lookup.json
+  // (built by build_atlas_lookup.py in the MSHI repo) and renders the
+  // real F+NPP XGBoost prediction + SHAP + biome + Köppen + distances.
+  // If the snapped cell isn't in the lookup (oceans, lakes, IGBP-water,
+  // or outside Asia), shows a "no prediction" panel.
   const showDetailAt = React.useCallback(
     async (
       lat: number,
@@ -155,25 +165,55 @@ export function AtlasMap() {
       outOfDomain?: boolean,
     ) => {
       try {
-        const r = await fetch('/data/atlas_mock_response.json');
-        const json = (await r.json()) as AtlasResponse;
-        const enriched: AtlasResponse = {
-          ...json,
-          coord: {
-            ...json.coord,
-            lat: +lat.toFixed(3),
-            lon: +lon.toFixed(3),
-          },
-          ...(cityName && { name: cityName }),
-          ...(outOfDomain && { outOfDomain: true }),
-        };
-        setResponse(enriched);
+        const cache = await loadLookup();
+        if (outOfDomain) {
+          // Geocoder returned a non-Asia location: keep the existing
+          // "outside training domain" panel.
+          setResponse({
+            coord: { lat, lon },
+            prediction: {
+              rs_anomaly: 1.0,
+              rs_anomaly_ci_low: 1.0,
+              rs_anomaly_ci_high: 1.0,
+              configuration: cache.model.name,
+            },
+            shap_top3: [],
+            biome: { igbp_class: '—', igbp_code: -1 },
+            koppen: { zone: '—', label: '—' },
+            distance_km: {
+              to_nearest_train_site: -1,
+              to_nearest_us_validation_site: -1,
+            },
+            ...(cityName && { name: cityName }),
+            outOfDomain: true,
+          });
+          return;
+        }
+        const cell = lookupCellSync(cache, lat, lon);
+        if (!cell) {
+          setResponse(noPredictionResponse(lat, lon, cityName));
+          return;
+        }
+        setResponse(cellToResponse(cache, cell, cityName));
       } catch (err) {
-        console.error('Failed to load atlas mock response', err);
+        console.error('[atlas] lookup failed', err);
+        setLookupError(
+          err instanceof Error ? err.message : 'Lookup failed',
+        );
       }
     },
     [],
   );
+
+  // Pre-warm the lookup once on mount so the first click is instant.
+  React.useEffect(() => {
+    loadLookup()
+      .then(() => setLookupReady(true))
+      .catch((err) => {
+        console.error('[atlas] lookup load failed', err);
+        setLookupError(err instanceof Error ? err.message : 'Lookup failed');
+      });
+  }, []);
 
   const handleSearchSubmit = React.useCallback(
     async (e?: React.FormEvent) => {

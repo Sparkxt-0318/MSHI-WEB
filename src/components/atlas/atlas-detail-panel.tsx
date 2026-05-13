@@ -19,7 +19,7 @@ interface AtlasDetailPanelProps {
 export function AtlasDetailPanel({ response, onClose }: AtlasDetailPanelProps) {
   if (!response) return null;
 
-  const { coord, name, outOfDomain, prediction, shap_top3, biome, koppen, distance_km } = response;
+  const { coord, name, outOfDomain, noPrediction, prediction, shap_top3, biome, koppen, distance_km } = response;
 
   const shapChartData = shap_top3.map((s) => ({
     name: s.feature,
@@ -88,6 +88,24 @@ export function AtlasDetailPanel({ response, onClose }: AtlasDetailPanelProps) {
               visual feedback — but no Rs-anomaly estimate is shown
               because the geocoded point falls outside the
               Asia training rectangle.
+            </p>
+          </>
+        ) : noPrediction ? (
+          <>
+            <p className="font-mono text-[0.72rem] uppercase tracking-meta text-accent">
+              No prediction available
+            </p>
+            <p className="mt-3 text-[0.95rem] leading-relaxed text-ink">
+              The clicked coordinate doesn&apos;t fall on a land cell in the
+              0.5° lookup grid. Most likely this is open ocean, a large
+              inland lake, an IGBP-water pixel, or extreme high-latitude
+              tundra outside the MODIS composite.
+            </p>
+            <p className="mt-6 border-t border-rule pt-4 font-mono text-[0.65rem] leading-relaxed text-ink-soft">
+              Try clicking on a land area inside Asia, or search for a
+              city. The lookup covers 20,678 Asia land cells from
+              `atlas_lookup.json` (built by the MSHI repo&apos;s
+              `build_atlas_lookup.py`).
             </p>
           </>
         ) : (
@@ -206,9 +224,10 @@ function PredictionBody({
         </dl>
 
         <p className="mt-8 border-t border-rule pt-4 font-mono text-[0.65rem] leading-relaxed text-ink-soft">
-          PLACEHOLDER · Returned from a stub. The real handler will key on the
-          0.5° grid cell containing the click; until the precomputed lookup
-          JSON is supplied, every click returns the same example record.
+          F+NPP XGBoost · n=615 Asia training sites (SRDB + COSORE) ·
+          Asia → US transfer R² = +0.145 (95% CI 0.026–0.241).
+          Per-cell SHAP via TreeExplainer; biome from MODIS IGBP;
+          Köppen derived from WorldClim bio01/bio12/bio14/bio17.
         </p>
     </>
   );
