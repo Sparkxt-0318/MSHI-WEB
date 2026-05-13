@@ -19,7 +19,7 @@ interface AtlasDetailPanelProps {
 export function AtlasDetailPanel({ response, onClose }: AtlasDetailPanelProps) {
   if (!response) return null;
 
-  const { coord, name, prediction, shap_top3, biome, koppen, distance_km } = response;
+  const { coord, name, outOfDomain, prediction, shap_top3, biome, koppen, distance_km } = response;
 
   const shapChartData = shap_top3.map((s) => ({
     name: s.feature,
@@ -67,9 +67,61 @@ export function AtlasDetailPanel({ response, onClose }: AtlasDetailPanelProps) {
 
         <hr className="my-6 border-rule" />
 
-        <p className="font-mono text-[0.72rem] uppercase tracking-meta text-ink-soft">
-          Predicted Rs anomaly · {prediction.configuration}
-        </p>
+        {outOfDomain ? (
+          <>
+            <p className="font-mono text-[0.72rem] uppercase tracking-meta text-accent">
+              Outside model training domain
+            </p>
+            <p className="mt-3 text-[0.95rem] leading-relaxed text-ink">
+              The F+NPP model was trained on 615 Asia sites
+              (SRDB + COSORE) covering longitude{' '}
+              <span className="font-mono">25–180°E</span> and latitude{' '}
+              <span className="font-mono">−10–80°N</span>.
+            </p>
+            <p className="mt-3 text-[0.95rem] leading-relaxed text-ink">
+              Predictions for{' '}
+              <span className="font-serif font-bold">{name ?? 'this location'}</span>{' '}
+              are not scientifically supported.
+            </p>
+            <p className="mt-6 border-t border-rule pt-4 font-mono text-[0.65rem] leading-relaxed text-ink-soft">
+              Search returned a valid location — the globe flew there for
+              visual feedback — but no Rs-anomaly estimate is shown
+              because the geocoded point falls outside the
+              Asia training rectangle.
+            </p>
+          </>
+        ) : (
+          <PredictionBody
+            prediction={prediction}
+            shapChartData={shapChartData}
+            biome={biome}
+            koppen={koppen}
+            distance_km={distance_km}
+          />
+        )}
+      </div>
+    </aside>
+  );
+}
+
+function PredictionBody({
+  prediction,
+  shapChartData,
+  biome,
+  koppen,
+  distance_km,
+}: {
+  prediction: AtlasResponse['prediction'];
+  shapChartData: { name: string; value: number }[];
+  biome: AtlasResponse['biome'];
+  koppen: AtlasResponse['koppen'];
+  distance_km: AtlasResponse['distance_km'];
+}) {
+  return (
+    <>
+      <p className="font-mono text-[0.72rem] uppercase tracking-meta text-ink-soft">
+        Predicted Rs anomaly · {prediction.configuration}
+      </p>
         <p className="mt-1 font-serif text-4xl font-bold leading-none text-ink">
           {prediction.rs_anomaly >= 1 ? '+' : ''}
           {((prediction.rs_anomaly - 1) * 100).toFixed(1)}%
@@ -158,7 +210,6 @@ export function AtlasDetailPanel({ response, onClose }: AtlasDetailPanelProps) {
           0.5° grid cell containing the click; until the precomputed lookup
           JSON is supplied, every click returns the same example record.
         </p>
-      </div>
-    </aside>
+    </>
   );
 }

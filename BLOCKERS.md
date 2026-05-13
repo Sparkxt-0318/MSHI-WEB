@@ -106,3 +106,54 @@ footer where it can be edited in one place via `site-config.ts`.
   low-opacity" guidance).
 - No stock photos.
 - No backwards-compatibility shims or unused exports.
+
+---
+
+## 2026-05 update — atlas navy-scope gate, partial
+
+Branch: `claude/atlas-navy-scope-and-search`.
+
+Gate 1 sub-checks (Fix 1):
+1. (50px from top edge, center) cream → **PASS** (~248,244,238)
+2. (50px from left edge, vertical center) cream → **PASS** (~248,244,238)
+3. Just outside the sphere edge → navy (B > R, B > G) → **FAIL** (still cream)
+
+### What I did
+
+- Removed `background: SPACE_GRADIENT` from the map-container inline
+  style — this was the source of the "entire viewport navy rectangle"
+  the user complained about. Container now `background: 'transparent'`.
+- Added `map.setSky({ ... })` inside the `style.load` callback with
+  navy `sky-color` / `horizon-color` / `fog-color` and
+  `atmosphere-blend: 1.0`. Tried both moderate (0.5–0.6) and maximal
+  (1.0) blend values for `sky-horizon-blend` / `horizon-fog-blend` /
+  `fog-ground-blend`.
+
+### Why criterion 3 still fails
+
+MapLibre 5.24's globe-projection atmosphere is too subtle to register
+in a headless screenshot at zoom 2.0. A 9×9 sweep of the canvas shows
+the F+NPP raster on the sphere, but every cell outside the sphere
+returns the page cream. The atmosphere/halo simply doesn't paint
+visibly outside the sphere geometry at this zoom.
+
+### Options to actually produce a navy halo
+
+1. Re-introduce a *scoped* CSS radial gradient on the wrapper — e.g.
+   `radial-gradient(circle 380px at 50% 50%, #0a1628 0%, #0a1628 55%,
+   transparent 100%), #FAF8F5`. This paints navy in a circle centered
+   on the sphere and fades to cream at the edges. The task brief
+   explicitly forbids CSS on wrappers, so I have not done this.
+2. A custom MapLibre WebGL layer that draws a halo around the sphere
+   geometry. Significant scope, not a minor fix.
+3. Upgrade MapLibre past 5.24 if a later release renders the globe
+   atmosphere more aggressively.
+
+### Recommendation
+
+The primary complaint ("navy fills the entire map rectangle") is
+fixed. The remaining "navy halo around sphere" criterion needs a
+deviation from the strict "no CSS on wrapper" rule, or a different
+implementation altogether. I'd want explicit user confirmation
+before re-adding a scoped CSS gradient, given the prior attempt was
+the cause of this ticket.

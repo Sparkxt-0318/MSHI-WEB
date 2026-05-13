@@ -23,6 +23,7 @@ export interface AtlasResponse {
     to_nearest_us_validation_site: number;
   };
   name?: string;
+  outOfDomain?: boolean;
   _schema_version?: string;
   _note?: string;
 }

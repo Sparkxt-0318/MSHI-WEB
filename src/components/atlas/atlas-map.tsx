@@ -6,22 +6,33 @@ import { Protocol as PMTilesProtocol } from 'pmtiles';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { AtlasDetailPanel } from './atlas-detail-panel';
 import type { AtlasOverlayLayer, AtlasResponse } from './atlas-mock-types';
-import { Camera } from 'lucide-react';
+import { Camera, Search } from 'lucide-react';
+
+// Asia training-domain bounding box for the F+NPP model. Any geocoded
+// search result that falls outside this rectangle is flagged
+// `outOfDomain` so the detail panel shows the "not scientifically
+// supported" message instead of fake prediction numbers.
+const ASIA_BBOX = { minLng: 25, maxLng: 180, minLat: -10, maxLat: 80 };
+
+function isInAsia(lng: number, lat: number): boolean {
+  return (
+    lng >= ASIA_BBOX.minLng &&
+    lng <= ASIA_BBOX.maxLng &&
+    lat >= ASIA_BBOX.minLat &&
+    lat <= ASIA_BBOX.maxLat
+  );
+}
 
 // PMTiles file served as a Vercel static asset out of public/tiles/.
 // MapLibre talks to it through the `pmtiles://` protocol registered below.
 const FNPP_PMTILES_URL = 'pmtiles:///tiles/mshi_f_npp_anomaly.pmtiles';
 
-// Minimal inline basemap style. We don't depend on any external style/tile
-// CDN: the F+NPP raster *is* the visualization. Country outlines can be
-// layered on later via a vector source if desired. Keeping the basemap
-// self-contained also means no CORS / cert-chain failure modes during
-// the Vercel cold start.
-//
-// `background-color` is fully transparent so the "space" area outside the
-// globe falls through to the container div's CSS radial gradient
-// (NASA-Worldview-ish deep navy). Inside the globe, the F+NPP raster paints
-// over the same transparent backdrop.
+// Minimal inline basemap style. The F+NPP raster *is* the visualization;
+// the basemap stays self-contained to avoid CORS/cert failure modes on
+// Vercel cold start. `background-color` is transparent so the page's cream
+// shows through inside MapLibre's canvas wherever no layer paints — the
+// dark "space" surrounding the sphere is rendered by MapLibre's sky API
+// (see setSky call in style.load), not by a CSS rectangle behind the canvas.
 const BASEMAP_STYLE: maplibregl.StyleSpecification = {
   version: 8,
   sources: {},
@@ -33,11 +44,6 @@ const BASEMAP_STYLE: maplibregl.StyleSpecification = {
     },
   ],
 };
-
-// Background shown behind the WebGL canvas. Visible only outside the globe
-// sphere (where MapLibre draws transparent pixels in globe projection).
-const SPACE_GRADIENT =
-  'radial-gradient(ellipse at center, #0a1628 0%, #0a1628 35%, #1e3a5f 100%)';
 
 // Register the PMTiles protocol exactly once at module load. MapLibre's
 // addProtocol is a global registry, so re-registering on every mount would
@@ -134,6 +140,101 @@ export function AtlasMap() {
     React.useState<AtlasOverlayLayer>('F+NPP');
   const [response, setResponse] = React.useState<AtlasResponse | null>(null);
   const [mapError, setMapError] = React.useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [searchError, setSearchError] = React.useState<string | null>(null);
+  const [searching, setSearching] = React.useState(false);
+
+  // PLACEHOLDER click handler shared by globe clicks, city-pin clicks,
+  // and search results. Every call returns the same mock record with the
+  // supplied coordinate spliced in. Night 3+: look up by 0.5° grid cell
+  // in a real precomputed table.
+  const showDetailAt = React.useCallback(
+    async (
+      lat: number,
+      lon: number,
+      cityName?: string,
+      outOfDomain?: boolean,
+    ) => {
+      try {
+        const r = await fetch('/data/atlas_mock_response.json');
+        const json = (await r.json()) as AtlasResponse;
+        const enriched: AtlasResponse = {
+          ...json,
+          coord: {
+            ...json.coord,
+            lat: +lat.toFixed(3),
+            lon: +lon.toFixed(3),
+          },
+          ...(cityName && { name: cityName }),
+          ...(outOfDomain && { outOfDomain: true }),
+        };
+        setResponse(enriched);
+      } catch (err) {
+        console.error('Failed to load atlas mock response', err);
+      }
+    },
+    [],
+  );
+
+  const handleSearchSubmit = React.useCallback(
+    async (e?: React.FormEvent) => {
+      e?.preventDefault();
+      const q = searchQuery.trim();
+      if (!q) return;
+      const map = mapRef.current;
+      if (!map) return;
+
+      setSearchError(null);
+      setSearching(true);
+      try {
+        const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=1`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Photon API ${res.status}`);
+        const json = (await res.json()) as {
+          features?: Array<{
+            geometry?: { coordinates?: [number, number] };
+            properties?: { name?: string; city?: string; country?: string };
+          }>;
+        };
+        const feat = json.features?.[0];
+        const coords = feat?.geometry?.coordinates;
+        if (!feat || !coords || coords.length < 2) {
+          setSearchError('No location found — try a different query');
+          setSearching(false);
+          return;
+        }
+        const [lng, lat] = coords;
+        // Photon often returns the localized name (e.g. "서울특별시" for
+        // Seoul). Prefer the user's query unless it lacks letters; that
+        // keeps the panel's "Location" header readable in the user's
+        // expected language without forcing extra geocoder calls.
+        const rawName =
+          feat.properties?.name ??
+          feat.properties?.city ??
+          feat.properties?.country ??
+          q;
+        const isLatinAscii = /^[\x20-\x7F]+$/.test(rawName);
+        const titleCased = q
+          .split(/\s+/)
+          .map((w) => (w.length ? w[0].toUpperCase() + w.slice(1) : w))
+          .join(' ');
+        const displayName = isLatinAscii ? rawName : titleCased;
+
+        const inAsia = isInAsia(lng, lat);
+
+        map.flyTo({ center: [lng, lat], zoom: 4, duration: 2000 });
+        map.once('moveend', () => {
+          void showDetailAt(lat, lng, displayName, !inAsia);
+        });
+      } catch (err) {
+        console.error('[atlas search] failed', err);
+        setSearchError('No location found — try a different query');
+      } finally {
+        setSearching(false);
+      }
+    },
+    [searchQuery, showDetailAt],
+  );
 
   React.useEffect(() => {
     if (!containerRef.current) return;
@@ -172,6 +273,25 @@ export function AtlasMap() {
       } catch (err) {
         console.warn('[maplibre] globe projection unavailable', err);
       }
+      // Paint the "space" surrounding the sphere via MapLibre's sky API
+      // rather than a CSS rectangle on the container — the latter looked
+      // like a filled rectangle instead of a planet floating in a dark
+      // void. With globe projection + sky, the dark halo is only visible
+      // where the sphere isn't, and the page's cream background shows in
+      // the rest of the container.
+      try {
+        map.setSky({
+          'sky-color': '#0a1628',
+          'horizon-color': '#1e3a5f',
+          'fog-color': '#0a1628',
+          'sky-horizon-blend': 1.0,
+          'horizon-fog-blend': 1.0,
+          'fog-ground-blend': 0.0,
+          'atmosphere-blend': 1.0,
+        });
+      } catch (err) {
+        console.warn('[maplibre] sky unavailable', err);
+      }
     });
 
     map.on('error', (e) => {
@@ -191,7 +311,7 @@ export function AtlasMap() {
         showCompass: true,
         visualizePitch: false,
       }),
-      'top-right',
+      'bottom-right',
     );
 
     map.addControl(
@@ -206,29 +326,6 @@ export function AtlasMap() {
       map.resize();
     });
     resizeObs.observe(containerRef.current);
-
-    // PLACEHOLDER click handler shared by both globe clicks and city-pin
-    // clicks. Every call returns the same mock record with the supplied
-    // coordinate spliced in.
-    // Night 3+: look up by 0.5° grid cell in a real precomputed table.
-    const showDetailAt = async (lat: number, lon: number, cityName?: string) => {
-      try {
-        const r = await fetch('/data/atlas_mock_response.json');
-        const json = (await r.json()) as AtlasResponse;
-        const enriched: AtlasResponse = {
-          ...json,
-          coord: {
-            ...json.coord,
-            lat: +lat.toFixed(3),
-            lon: +lon.toFixed(3),
-          },
-          ...(cityName && { name: cityName }),
-        };
-        setResponse(enriched);
-      } catch (err) {
-        console.error('Failed to load atlas mock response', err);
-      }
-    };
 
     const markers: maplibregl.Marker[] = [];
 
@@ -323,9 +420,50 @@ export function AtlasMap() {
               right: 0,
               bottom: 0,
               left: 0,
-              background: SPACE_GRADIENT,
+              background: 'transparent',
             }}
           />
+
+          {/* Top-right search */}
+          <div
+            data-mshi-atlas-search
+            className="pointer-events-auto absolute right-4 top-4 z-20 flex flex-col gap-1 border border-rule bg-paper/95 p-2 backdrop-blur-sm"
+            style={{ width: 280 }}
+          >
+            <form
+              onSubmit={handleSearchSubmit}
+              className="flex items-center gap-1"
+            >
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search city or country..."
+                disabled={searching}
+                className="flex-1 border border-rule bg-paper px-2 py-1 font-mono text-[0.75rem] text-ink placeholder:text-ink-soft focus:border-ink focus:outline-none disabled:opacity-50"
+              />
+              <button
+                type="submit"
+                disabled={searching || !searchQuery.trim()}
+                aria-label="Search location"
+                className="border border-rule bg-paper px-2 py-1 text-ink-soft hover:border-ink hover:text-ink disabled:opacity-50 disabled:hover:border-rule disabled:hover:text-ink-soft"
+              >
+                <Search className="h-3.5 w-3.5" />
+              </button>
+            </form>
+            {searchError ? (
+              <p
+                data-mshi-atlas-search-error
+                className="font-mono text-[0.65rem] leading-snug text-accent"
+              >
+                {searchError}
+              </p>
+            ) : (
+              <p className="font-mono text-[0.6rem] leading-snug text-ink-soft">
+                Powered by Photon · OSM. Outside Asia → no prediction.
+              </p>
+            )}
+          </div>
 
           {/* Top-left overlay toggle */}
           <div className="pointer-events-auto absolute left-4 top-4 z-20 flex flex-col gap-2 border border-rule bg-paper/95 p-3 backdrop-blur-sm">
