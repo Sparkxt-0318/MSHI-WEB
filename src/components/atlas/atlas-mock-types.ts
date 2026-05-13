@@ -14,7 +14,15 @@ export interface AtlasResponse {
     configuration: string;
     _note?: string;
   };
-  shap_top3: Array<{ feature: string; value: number }>;
+  /** Top-3 SHAP entries. `key` is the raw model feature key (e.g. "npp"),
+   *  joinable against AtlasResponse.features and the feature knowledge
+   *  base in `src/lib/feature-descriptions.ts`. Older payloads may omit
+   *  `key`; the UI falls back to display-name lookup in that case. */
+  shap_top3: Array<{ feature: string; key?: string; value: number }>;
+  /** Raw F+NPP model input values at this cell, keyed by model feature
+   *  name. Present on atlas_lookup.v2 cells; older v1 payloads will omit
+   *  this field. */
+  features?: Record<string, number>;
   biome: { igbp_class: string; igbp_code: number };
   koppen: { zone: string; label: string };
   distance_km: {
@@ -38,7 +46,8 @@ export interface AtlasLookupCell {
   pred_log_rs: number;
   pred_climate_log_rs: number;
   anomaly: number;
-  shap_top3: Array<{ feature: string; value: number }>;
+  shap_top3: Array<{ feature: string; key?: string; value: number }>;
+  features?: Record<string, number>;
   biome_code: number;
   biome: string;
   koppen_code: string;

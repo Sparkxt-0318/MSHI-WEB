@@ -122,6 +122,7 @@ export function cellToResponse(
       configuration: cache.model.name,
     },
     shap_top3: cell.shap_top3,
+    features: cell.features,
     biome: { igbp_class: cell.biome, igbp_code: cell.biome_code },
     koppen: { zone: cell.koppen_code, label: cell.koppen },
     distance_km: {
