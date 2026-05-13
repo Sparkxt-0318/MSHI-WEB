@@ -1,17 +1,30 @@
 'use client';
 
 import * as React from 'react';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import maplibregl from 'maplibre-gl';
+import { Protocol as PMTilesProtocol } from 'pmtiles';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { AtlasDetailPanel } from './atlas-detail-panel';
 import type { AtlasOverlayLayer, AtlasResponse } from './atlas-mock-types';
 import { Camera } from 'lucide-react';
 
-const STYLE_URL =
-  process.env.NEXT_PUBLIC_MAPBOX_STYLE ?? 'mapbox://styles/mapbox/light-v11';
-const TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? '';
+// PMTiles file served as a Vercel static asset out of public/tiles/.
+// MapLibre talks to it through the `pmtiles://` protocol registered below.
+const FNPP_PMTILES_URL = 'pmtiles:///tiles/mshi_f_npp_anomaly.pmtiles';
 
-const OVERLAY_PNG = '/images/atlas_overlay_fnpp.png';
+// Free MapLibre demo style. Replace later if a custom basemap is desired.
+const BASEMAP_STYLE = 'https://demotiles.maplibre.org/style.json';
+
+// Register the PMTiles protocol exactly once at module load. MapLibre's
+// addProtocol is a global registry, so re-registering on every mount would
+// leak handlers.
+let pmtilesRegistered = false;
+function ensurePMTilesProtocol() {
+  if (pmtilesRegistered) return;
+  const protocol = new PMTilesProtocol();
+  maplibregl.addProtocol('pmtiles', protocol.tile);
+  pmtilesRegistered = true;
+}
 
 const OVERLAY_LAYERS: ReadonlyArray<{
   id: AtlasOverlayLayer;
@@ -25,94 +38,99 @@ const OVERLAY_LAYERS: ReadonlyArray<{
   { id: 'Koppen-D', label: 'Köppen D', live: false },
 ];
 
+const FNPP_SOURCE_ID = 'fnpp-pmtiles';
+const FNPP_LAYER_ID = 'fnpp-pmtiles-layer';
+
 export function AtlasMap() {
   const containerRef = React.useRef<HTMLDivElement | null>(null);
-  const mapRef = React.useRef<mapboxgl.Map | null>(null);
+  const mapRef = React.useRef<maplibregl.Map | null>(null);
   const [activeOverlay, setActiveOverlay] =
     React.useState<AtlasOverlayLayer>('F+NPP');
   const [response, setResponse] = React.useState<AtlasResponse | null>(null);
-  const [tokenMissing, setTokenMissing] = React.useState(false);
   const [mapError, setMapError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (!containerRef.current) return;
-    if (!TOKEN) {
-      setTokenMissing(true);
-      return;
-    }
 
-    mapboxgl.accessToken = TOKEN;
+    ensurePMTilesProtocol();
 
-    let map: mapboxgl.Map;
+    let map: maplibregl.Map;
     try {
-      map = new mapboxgl.Map({
+      map = new maplibregl.Map({
         container: containerRef.current,
-        style: STYLE_URL,
-        center: [100, 38], // Asia centroid
-        zoom: 2.6,
-        minZoom: 1.5,
-        attributionControl: true,
+        style: BASEMAP_STYLE,
+        center: [90, 35], // Asia
+        zoom: 2.0,
+        minZoom: 0.5,
+        maxZoom: 8,
+        attributionControl: false,
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error('[mapbox] init failed', err);
+      console.error('[maplibre] init failed', err);
       setMapError(msg);
       return;
     }
 
     mapRef.current = map;
 
-    // Surface Mapbox runtime errors (auth failures, blocked styles, CORS, etc.)
-    // instead of letting them disappear into the console.
+    // Enable 3D globe projection. MapLibre 5.x supports this via setProjection
+    // after construction (and the projection: { type: 'globe' } map option).
+    try {
+      map.setProjection({ type: 'globe' });
+    } catch (err) {
+      console.warn('[maplibre] globe projection unavailable', err);
+    }
+
     map.on('error', (e) => {
       const msg =
         (e?.error && (e.error as Error).message) ||
         (e as unknown as { message?: string }).message ||
-        'Unknown Mapbox error';
-      console.error('[mapbox]', msg, e);
+        'Unknown MapLibre error';
+      console.error('[maplibre]', msg, e);
+      // Tile-fetch errors from the PMTiles protocol surface here too; don't
+      // wipe out the whole UI for transient fetch failures.
+      if (msg && msg.toLowerCase().includes('pmtiles')) return;
       setMapError(msg);
     });
 
     map.addControl(
-      new mapboxgl.NavigationControl({ showCompass: false, visualizePitch: false }),
+      new maplibregl.NavigationControl({
+        showCompass: true,
+        visualizePitch: false,
+      }),
       'top-right',
     );
 
+    map.addControl(
+      new maplibregl.AttributionControl({ compact: true }),
+      'bottom-right',
+    );
+
     map.on('load', () => {
-      // Try to add the F+NPP overlay if the user has supplied the PNG.
-      // Bounds chosen to roughly cover the SRDB+COSORE Asian study domain.
-      try {
-        map.addSource('fnpp-overlay', {
-          type: 'image',
-          url: OVERLAY_PNG,
-          coordinates: [
-            [60, 60], // top-left
-            [150, 60], // top-right
-            [150, 0], // bottom-right
-            [60, 0], // bottom-left
-          ],
-        });
-        map.addLayer({
-          id: 'fnpp-overlay-layer',
-          type: 'raster',
-          source: 'fnpp-overlay',
-          paint: { 'raster-opacity': 0.65 },
-        });
-      } catch {
-        // Image not yet supplied — silently skip; placeholder messaging
-        // appears in the legend strip.
-      }
+      map.addSource(FNPP_SOURCE_ID, {
+        type: 'raster',
+        url: FNPP_PMTILES_URL,
+        tileSize: 256,
+      });
+      map.addLayer({
+        id: FNPP_LAYER_ID,
+        type: 'raster',
+        source: FNPP_SOURCE_ID,
+        paint: {
+          'raster-opacity': 0.85,
+          'raster-resampling': 'linear',
+        },
+      });
     });
 
     map.on('click', async (e) => {
       // PLACEHOLDER click handler: every click returns the same mock record.
-      // When the user supplies a precomputed lookup, look up by 0.5° grid
-      // cell containing e.lngLat.
+      // Night 3+: look up by 0.5° grid cell containing e.lngLat in a real
+      // precomputed table.
       try {
         const r = await fetch('/data/atlas_mock_response.json');
         const json = (await r.json()) as AtlasResponse;
-        // Override coord with the actual click location so the panel feels
-        // responsive — the rest of the record stays as the mock template.
         const enriched: AtlasResponse = {
           ...json,
           coord: {
@@ -133,75 +151,40 @@ export function AtlasMap() {
     };
   }, []);
 
+  // Toggle the live F+NPP raster visibility when the user flips between
+  // overlay buttons. Placeholders don't have layers to toggle.
+  React.useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => {
+      if (!map.getLayer(FNPP_LAYER_ID)) return;
+      const visible = activeOverlay === 'F+NPP';
+      map.setLayoutProperty(
+        FNPP_LAYER_ID,
+        'visibility',
+        visible ? 'visible' : 'none',
+      );
+    };
+    if (map.isStyleLoaded()) {
+      apply();
+    } else {
+      map.once('load', apply);
+    }
+  }, [activeOverlay]);
+
   return (
     <div className="relative h-[calc(100vh-5rem)] w-full bg-cream">
-      {tokenMissing ? (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-cream p-12 text-center">
-          <p className="meta-label">Atlas · setup required</p>
-          <h2 className="mt-4 max-w-2xl font-serif text-3xl font-bold text-ink">
-            Mapbox access token missing.
-          </h2>
-          <p className="mt-4 max-w-xl font-mono text-sm leading-relaxed text-ink-soft">
-            Set <span className="text-accent">NEXT_PUBLIC_MAPBOX_TOKEN</span> in
-            your environment (or in Vercel project settings) and redeploy.
-            See <span className="ml-1">.env.example</span> for setup details.
-          </p>
-          <ol className="mt-6 max-w-xl space-y-1 text-left font-mono text-xs leading-relaxed text-ink-soft">
-            <li>
-              <span className="text-accent">1.</span> Create a public token at
-              account.mapbox.com/access-tokens (free tier is enough).
-            </li>
-            <li>
-              <span className="text-accent">2.</span> Vercel → Project →
-              Settings → Environment Variables, add{' '}
-              <span className="text-accent">NEXT_PUBLIC_MAPBOX_TOKEN</span>.
-            </li>
-            <li>
-              <span className="text-accent">3.</span> Trigger a new deployment
-              (NEXT_PUBLIC_* vars are baked in at build time).
-            </li>
-          </ol>
-        </div>
-      ) : mapError ? (
+      {mapError ? (
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-cream p-12 text-center">
           <p className="meta-label">Atlas · map failed to load</p>
           <h2 className="mt-4 max-w-2xl font-serif text-3xl font-bold text-ink">
-            The Mapbox map couldn&apos;t initialize.
+            The MapLibre globe couldn&apos;t initialize.
           </h2>
-          <p className="mt-4 max-w-xl font-mono text-sm leading-relaxed text-ink-soft">
-            Token is set, but the map reported an error:
-          </p>
           <pre className="mt-3 max-w-xl whitespace-pre-wrap break-words border border-rule bg-paper px-4 py-3 text-left font-mono text-[0.78rem] text-accent">
             {mapError}
           </pre>
-          <p className="mt-6 max-w-xl font-mono text-xs leading-relaxed text-ink-soft">
-            Most common causes:
-          </p>
-          <ol className="mt-3 max-w-xl space-y-1 text-left font-mono text-xs leading-relaxed text-ink-soft">
-            <li>
-              <span className="text-accent">·</span> Token URL restrictions
-              don&apos;t include your Vercel domain — visit{' '}
-              account.mapbox.com/access-tokens, edit the token, and either
-              clear URL restrictions or add{' '}
-              <span className="text-accent">*.vercel.app</span> +{' '}
-              <span className="text-accent">your-custom-domain.com</span>.
-            </li>
-            <li>
-              <span className="text-accent">·</span> Token is missing scopes —
-              a default public token (pk.…) with{' '}
-              <span className="text-accent">styles:read</span>,{' '}
-              <span className="text-accent">tiles:read</span>,{' '}
-              <span className="text-accent">fonts:read</span> is enough.
-            </li>
-            <li>
-              <span className="text-accent">·</span> Token was rotated/revoked
-              after the last build — set the new token in Vercel env vars and
-              redeploy.
-            </li>
-          </ol>
           <p className="mt-6 max-w-xl font-mono text-[0.7rem] text-ink-soft">
-            Open the browser DevTools console for the full Mapbox error
-            object.
+            Open the browser DevTools console for the full error object.
           </p>
         </div>
       ) : (
@@ -233,7 +216,7 @@ export function AtlasMap() {
               })}
             </div>
             <p className="mt-1 font-mono text-[0.6rem] leading-snug text-ink-soft">
-              Only F+NPP is live. Others are placeholders awaiting precomputed
+              F+NPP live (MapLibre globe + PMTiles). Others awaiting precomputed
               rasters.
             </p>
           </div>
@@ -241,21 +224,25 @@ export function AtlasMap() {
           {/* Bottom strip: legend + actions */}
           <div className="pointer-events-auto absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-6 border border-rule bg-paper/95 px-5 py-3 backdrop-blur-sm">
             <div>
-              <p className="meta-label text-ink-soft">Anomaly</p>
+              <p className="meta-label text-ink-soft">
+                Rs anomaly · F+NPP · n=615
+              </p>
               <div className="mt-1 flex items-center gap-2">
                 <div
                   aria-hidden="true"
-                  className="h-2 w-40"
+                  className="h-2 w-44"
                   style={{
+                    // Hero-aligned inverted colormap: red = suppressed (low),
+                    // blue = elevated (high). Left-to-right = 0.5 -> 1.5.
                     background:
-                      'linear-gradient(to right, #1F4068 0%, #3F7CAB 25%, #FAF8F5 50%, #F4C2A8 75%, #A4221A 100%)',
+                      'linear-gradient(to right, #A4221A 0%, #F4C2A8 25%, #FAF8F5 50%, #3F7CAB 75%, #1F4068 100%)',
                   }}
                 />
               </div>
               <div className="mt-1 flex justify-between font-mono text-[0.6rem] text-ink-soft">
-                <span>0.5</span>
+                <span>0.5 · suppressed</span>
                 <span>1.0</span>
-                <span>1.5</span>
+                <span>1.5 · elevated</span>
               </div>
             </div>
             <div className="border-l border-rule pl-6">
