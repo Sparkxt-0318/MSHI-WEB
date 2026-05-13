@@ -88,13 +88,19 @@ export function AtlasMap() {
 
     mapRef.current = map;
 
-    // Enable 3D globe projection. MapLibre 5.x supports this via setProjection
-    // after construction (and the projection: { type: 'globe' } map option).
-    try {
-      map.setProjection({ type: 'globe' });
-    } catch (err) {
-      console.warn('[maplibre] globe projection unavailable', err);
-    }
+    // Enable the 3D globe projection only after the style finishes loading.
+    // The previous code called setProjection() synchronously after construction;
+    // on the Vercel build this raced the style-load lifecycle and threw
+    // "Style is not done loading", which silently broke the entire map render.
+    // `style.load` fires once the StyleSpecification is parsed and committed —
+    // setProjection is safe from that point on.
+    map.on('style.load', () => {
+      try {
+        map.setProjection({ type: 'globe' });
+      } catch (err) {
+        console.warn('[maplibre] globe projection unavailable', err);
+      }
+    });
 
     map.on('error', (e) => {
       const msg =
