@@ -17,6 +17,11 @@ const FNPP_PMTILES_URL = 'pmtiles:///tiles/mshi_f_npp_anomaly.pmtiles';
 // layered on later via a vector source if desired. Keeping the basemap
 // self-contained also means no CORS / cert-chain failure modes during
 // the Vercel cold start.
+//
+// `background-color` is fully transparent so the "space" area outside the
+// globe falls through to the container div's CSS radial gradient
+// (NASA-Worldview-ish deep navy). Inside the globe, the F+NPP raster paints
+// over the same transparent backdrop.
 const BASEMAP_STYLE: maplibregl.StyleSpecification = {
   version: 8,
   sources: {},
@@ -24,10 +29,15 @@ const BASEMAP_STYLE: maplibregl.StyleSpecification = {
     {
       id: 'background',
       type: 'background',
-      paint: { 'background-color': '#0E1116' },
+      paint: { 'background-color': 'rgba(0,0,0,0)' },
     },
   ],
 };
+
+// Background shown behind the WebGL canvas. Visible only outside the globe
+// sphere (where MapLibre draws transparent pixels in globe projection).
+const SPACE_GRADIENT =
+  'radial-gradient(ellipse at center, #0a1628 0%, #0a1628 35%, #1e3a5f 100%)';
 
 // Register the PMTiles protocol exactly once at module load. MapLibre's
 // addProtocol is a global registry, so re-registering on every mount would
@@ -54,6 +64,68 @@ const OVERLAY_LAYERS: ReadonlyArray<{
 
 const FNPP_SOURCE_ID = 'fnpp-pmtiles';
 const FNPP_LAYER_ID = 'fnpp-pmtiles-layer';
+
+// Eight reference cities within the Asian training domain. We deliberately
+// avoid pinning anywhere outside Asia: the F+NPP model is Asia-trained, so
+// pins elsewhere would imply scientifically unsupported predictions.
+// `code` is the short label drawn next to each dot.
+const ASIA_CITY_PINS: ReadonlyArray<{
+  name: string;
+  code: string;
+  lat: number;
+  lon: number;
+}> = [
+  { name: 'Beijing', code: 'BJ', lat: 39.9, lon: 116.4 },
+  { name: 'Tokyo', code: 'TY', lat: 35.7, lon: 139.7 },
+  { name: 'Seoul', code: 'SE', lat: 37.6, lon: 126.9 },
+  { name: 'Shanghai', code: 'SH', lat: 31.2, lon: 121.5 },
+  { name: 'Mumbai', code: 'MUM', lat: 19.1, lon: 72.9 },
+  { name: 'Singapore', code: 'SG', lat: 1.3, lon: 103.8 },
+  { name: 'Bangkok', code: 'BK', lat: 13.8, lon: 100.5 },
+  { name: 'Jakarta', code: 'JK', lat: -6.2, lon: 106.8 },
+];
+
+function createCityPinElement(code: string): HTMLDivElement {
+  const wrap = document.createElement('div');
+  wrap.setAttribute('data-mshi-city-pin', code);
+  wrap.style.cssText = [
+    'display:flex',
+    'align-items:center',
+    'gap:4px',
+    'cursor:pointer',
+    'transform:translateY(-1px)',
+    'pointer-events:auto',
+  ].join(';');
+
+  const dot = document.createElement('span');
+  dot.style.cssText = [
+    'width:10px',
+    'height:10px',
+    'border-radius:9999px',
+    'background:#ffffff',
+    'border:1.5px solid rgba(14,17,22,0.85)',
+    'box-shadow:0 0 0 1px rgba(255,255,255,0.25), 0 1px 3px rgba(0,0,0,0.55)',
+    'display:block',
+    'flex:0 0 auto',
+  ].join(';');
+
+  const label = document.createElement('span');
+  label.textContent = code;
+  label.style.cssText = [
+    'font-family:"SF Mono", Menlo, Consolas, monospace',
+    'font-size:10px',
+    'font-weight:600',
+    'letter-spacing:0.04em',
+    'color:#ffffff',
+    'text-shadow:0 1px 2px rgba(0,0,0,0.85), 0 0 4px rgba(0,0,0,0.6)',
+    'white-space:nowrap',
+    'user-select:none',
+  ].join(';');
+
+  wrap.appendChild(dot);
+  wrap.appendChild(label);
+  return wrap;
+}
 
 export function AtlasMap() {
   const containerRef = React.useRef<HTMLDivElement | null>(null);
@@ -135,6 +207,30 @@ export function AtlasMap() {
     });
     resizeObs.observe(containerRef.current);
 
+    // PLACEHOLDER click handler shared by both globe clicks and city-pin
+    // clicks. Every call returns the same mock record with the supplied
+    // coordinate spliced in.
+    // Night 3+: look up by 0.5° grid cell in a real precomputed table.
+    const showDetailAt = async (lat: number, lon: number) => {
+      try {
+        const r = await fetch('/data/atlas_mock_response.json');
+        const json = (await r.json()) as AtlasResponse;
+        const enriched: AtlasResponse = {
+          ...json,
+          coord: {
+            ...json.coord,
+            lat: +lat.toFixed(3),
+            lon: +lon.toFixed(3),
+          },
+        };
+        setResponse(enriched);
+      } catch (err) {
+        console.error('Failed to load atlas mock response', err);
+      }
+    };
+
+    const markers: maplibregl.Marker[] = [];
+
     map.on('load', () => {
       map.addSource(FNPP_SOURCE_ID, {
         type: 'raster',
@@ -150,30 +246,30 @@ export function AtlasMap() {
           'raster-resampling': 'linear',
         },
       });
-    });
 
-    map.on('click', async (e) => {
-      // PLACEHOLDER click handler: every click returns the same mock record.
-      // Night 3+: look up by 0.5° grid cell containing e.lngLat in a real
-      // precomputed table.
-      try {
-        const r = await fetch('/data/atlas_mock_response.json');
-        const json = (await r.json()) as AtlasResponse;
-        const enriched: AtlasResponse = {
-          ...json,
-          coord: {
-            ...json.coord,
-            lat: +e.lngLat.lat.toFixed(3),
-            lon: +e.lngLat.lng.toFixed(3),
-          },
-        };
-        setResponse(enriched);
-      } catch (err) {
-        console.error('Failed to load atlas mock response', err);
+      // Drop the 8 Asian reference-city pins. Markers (DOM-based) avoid the
+      // glyphs/font dependency a symbol+text-layer would require, and they
+      // get free occlusion behind the globe in MapLibre 5's globe projection.
+      for (const city of ASIA_CITY_PINS) {
+        const el = createCityPinElement(city.code);
+        el.title = `${city.name} (${city.lat.toFixed(1)}°, ${city.lon.toFixed(1)}°)`;
+        el.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          void showDetailAt(city.lat, city.lon);
+        });
+        const marker = new maplibregl.Marker({ element: el, anchor: 'left' })
+          .setLngLat([city.lon, city.lat])
+          .addTo(map);
+        markers.push(marker);
       }
     });
 
+    map.on('click', (e) => {
+      void showDetailAt(e.lngLat.lat, e.lngLat.lng);
+    });
+
     return () => {
+      for (const m of markers) m.remove();
       resizeObs.disconnect();
       map.remove();
       mapRef.current = null;
@@ -226,6 +322,7 @@ export function AtlasMap() {
               right: 0,
               bottom: 0,
               left: 0,
+              background: SPACE_GRADIENT,
             }}
           />
 

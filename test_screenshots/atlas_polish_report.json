@@ -1,0 +1,104 @@
+{
+  "url": "http://localhost:3000/atlas",
+  "screenshot": "test_screenshots/atlas_polish.png",
+  "consoleErrors": [],
+  "background": {
+    "topRight": {
+      "r": 68.7439,
+      "g": 88.2824,
+      "b": 114.4744,
+      "n": 10000
+    },
+    "bottomLeft": {
+      "r": 22.6303,
+      "g": 44.7361,
+      "b": 74.7363,
+      "n": 10000
+    },
+    "nonBlackAndBlueDominant": true
+  },
+  "pins": {
+    "domMarkerCount": 8,
+    "whiteBlobsDetected": 65,
+    "blobs": [
+      {
+        "x": 204.6829268292683,
+        "y": 33.24390243902439,
+        "size": 41
+      },
+      {
+        "x": 222,
+        "y": 34.5,
+        "size": 36
+      },
+      {
+        "x": 946,
+        "y": 33.5,
+        "size": 6
+      },
+      {
+        "x": 964.2857142857143,
+        "y": 35.5,
+        "size": 14
+      },
+      {
+        "x": 1010.125,
+        "y": 35.5,
+        "size": 16
+      },
+      {
+        "x": 1093,
+        "y": 35.5,
+        "size": 18
+      },
+      {
+        "x": 1102,
+        "y": 35.5,
+        "size": 18
+      },
+      {
+        "x": 1148.875,
+        "y": 33.875,
+        "size": 8
+      },
+      {
+        "x": 1166.875,
+        "y": 33.875,
+        "size": 8
+      },
+      {
+        "x": 1231,
+        "y": 33.5,
+        "size": 6
+      },
+      {
+        "x": 1240.125,
+        "y": 35.5,
+        "size": 16
+      },
+      {
+        "x": 338.875,
+        "y": 34.875,
+        "size": 8
+      },
+      {
+        "x": 347.875,
+        "y": 36.5,
+        "size": 16
+      },
+      {
+        "x": 384.2857142857143,
+        "y": 36.5,
+        "size": 14
+      },
+      {
+        "x": 411.875,
+        "y": 36.5,
+        "size": 16
+      }
+    ],
+    "pinClickOpensPanel": true,
+    "panelTextSnippet": "ATLAS · GRID CELL\n\nCOORDINATE\n\n39.900°N, 116.400°E\n\nPREDICTED RS ANOMALY · F+NPP\n\n+18.0%\n\nratio = 1.180 · 95% CI [0.94, 1.41]\n\nTOP-3 SHAP DRIVERS\n\nMODIS NPP\nMean annualtemperature\nSoil organiccarbon ("
+  },
+  "pass": true
+}
