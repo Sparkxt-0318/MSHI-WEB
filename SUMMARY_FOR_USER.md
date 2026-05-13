@@ -1,9 +1,156 @@
 # Summary for the user
 
-This file is a transparent record of what the overnight scaffolding run
-produced. Read top to bottom.
+This file is a transparent record of every overnight run. Newest at top.
 
-## TL;DR
+---
+
+## Night 2 — PMTiles globe atlas (this run)
+
+### TL;DR
+
+The `/atlas` page now serves the Night-1 PMTiles file (`mshi_f_npp_anomaly.pmtiles`,
+52.7 MiB, real F+NPP data) on a MapLibre globe with the hero-aligned inverted
+colormap (red = suppressed, blue = elevated, n = 615 training sites).
+The local headless-browser gate (Phase 6) **passed with red/blue pixels in
+distinct geographic regions** — see `test_screenshots/atlas_local.png`.
+Vercel-side Gate 6 is **blocked on you**: I don't have Vercel API auth
+in this sandbox and cannot determine the branch preview URL pattern, so
+I can't run the same screenshot test against the deployed build.
+
+### Branch
+
+I worked on **`claude/integrate-pmtiles-atlas-HYIcf`** (the branch the
+session was configured for), not `claude/atlas-v2-pmtiles` from the
+task description. The branch is pushed to `origin` with every phase as
+a separate commit. Open a PR from it to `main` when you're ready to
+ship.
+
+### What changed in MSHI-WEB
+
+- `public/tiles/mshi_f_npp_anomaly.pmtiles` — 52.7 MiB Night-1 PMTiles
+  file. Pulled via `curl` from
+  `raw.githubusercontent.com/Sparkxt-0318/MSHI/claude/vector-tile-pipeline-LXc5t/tiles/...`.
+  Provenance is in `public/tiles/README.md`. GitHub warned the file is
+  over its 50 MB recommended cap; the push still succeeded but if you
+  later move it to Git LFS, update the curl-fetch step in the README.
+- `package.json` — removed `mapbox-gl` and `@types/mapbox-gl`, added
+  `maplibre-gl@^5.0.0` and `pmtiles@^4.0.0`. Dev-only verifier deps:
+  `playwright`, `pngjs`.
+- `src/components/atlas/atlas-map.tsx` — rewritten end-to-end:
+  - MapLibre GL with `projection: { type: 'globe' }`.
+  - PMTiles protocol registered once at module load.
+  - F+NPP source: `pmtiles:///tiles/mshi_f_npp_anomaly.pmtiles`,
+    raster layer at `raster-opacity: 0.85` with linear resampling.
+  - **Inline basemap style** (no external CDN) — just a `#0E1116`
+    background. The F+NPP raster *is* the visualization; country
+    outlines can be layered on later via a vector source. Removing
+    the external style call also eliminates one CORS/cert-chain
+    failure mode.
+  - Overlay toggle preserved (F | F+NPP | Full+MODIS | Köppen C |
+    Köppen D); only F+NPP is wired live, others stay `·PH` placeholders.
+  - Click handler hydrates `AtlasDetailPanel` from the existing
+    mock JSON, with the clicked lat/lon spliced in.
+  - Legend rewritten: red = suppressed (0.5), blue = elevated (1.5),
+    labeled `Rs anomaly · F+NPP · n=615`.
+  - A `ResizeObserver` keeps the canvas filling the page even when
+    the container mounts at 0 height (see "Layout bug fixed" below).
+- `src/app/globals.css` — replaced `.mapboxgl-*` overrides with the
+  equivalent `.maplibregl-*` selectors.
+- `vercel.json` — added a `/tiles/(.*).pmtiles` headers rule:
+  `Content-Type: application/octet-stream`,
+  `Cache-Control: public, max-age=31536000, immutable`,
+  `Access-Control-Allow-Origin: *`. Range requests work by default.
+- `scripts/verify-atlas-colors.mjs` — Playwright-based color gate.
+  Counts saturated red and blue pixels, computes centroid distance,
+  records PMTiles network responses. Re-run any time with
+  `node scripts/verify-atlas-colors.mjs <url> [out_png]`.
+- `test_screenshots/atlas_local.png` and `atlas_gate6_report.json` —
+  evidence files from the local Gate 6 pass.
+
+### Phase-by-phase gate results
+
+| Phase | Gate | Result |
+|-------|------|--------|
+| 1 | PMTiles file (52.7 MiB, magic OK, zoom 0–6, bounds [25,180]×[-10,80]) | PASS |
+| 2 | maplibre-gl + pmtiles installed, typecheck clean | PASS |
+| 3 | atlas-map.tsx rewritten, globe projection, typecheck + build clean | PASS |
+| 4 | `curl /atlas` → 200; chunk JS has `maplibre`×7, `pmtiles` filename×1, `globe`×2; no dev-log errors | PASS |
+| 5 | `next.config.mjs` doesn't block .pmtiles serving; `vercel.json` headers rule added; tiles README present | PASS |
+| 6 (local) | 1440×807 canvas; **27,983 red pixels** (Russia/Siberia, centroid 879,235); **7,495 blue pixels** (tropical Asia, centroid 611,364); centroid distance 297 px; 9 PMTiles range fetches, all 206; no console errors | PASS |
+| 6 (Vercel) | unverified — see below | BLOCKED |
+| 7 | mapbox-gl removed; SUMMARY_FOR_USER updated; branch pushed | PASS |
+
+### How to verify on Vercel yourself (5 minutes)
+
+1. Open the Vercel dashboard for `mshi-web`. Look in the Deployments
+   tab for a preview build of branch `claude/integrate-pmtiles-atlas-HYIcf`.
+   Wait for it to finish if it's still building.
+2. Open the preview URL + `/atlas`. You should see the Asian globe
+   with red across Russia/Siberia and blue across the tropics, the
+   overlay toggle top-left, and the new legend bottom-center. Clicking
+   anywhere on the globe should pop open the detail panel with the
+   click's lat/lon.
+3. (Optional) Re-run the automated gate against the deployment:
+   ```bash
+   node scripts/verify-atlas-colors.mjs \
+     https://<your-preview-url>/atlas \
+     test_screenshots/atlas_vercel.png
+   ```
+   The script exits 0 on pass and prints the same JSON report. If it
+   fails on the Vercel build but passed locally, the likely cause is
+   a tile MIME / Range / CORS difference — re-check `vercel.json`.
+
+### Layout bug fixed during verification
+
+The first Playwright run rendered the page with a 1440×300 canvas and
+no visible globe. Cause: Tailwind's `absolute inset-0` shorthand on the
+map container collapsed to `height: 0` in this build, and MapLibre
+captured that 0-height at construction. Fixed by:
+1. Replacing `className="absolute inset-0"` with explicit inline
+   styles (`{position:'absolute', top:0, right:0, bottom:0, left:0}`).
+2. Adding a `ResizeObserver` that calls `map.resize()` on parent layout.
+
+Verifying locally: this was a real bug. The same code would have
+shipped to Vercel collapsed if I hadn't run Phase 6 — this is exactly
+the failure mode the color gate was designed to catch.
+
+### Open items for Night 3+
+
+- **Real click-to-prediction**: the click handler still returns the
+  same `atlas_mock_response.json` body with the clicked lat/lon
+  spliced in. The atlas detail panel will say "PLACEHOLDER" until you
+  wire in a real per-cell lookup table. The schema is documented in
+  `src/components/atlas/atlas-mock-types.ts` and matches Night-1's
+  preferred output shape — generate a sidecar JSON keyed by
+  `lat{round to 0.5}_lon{round to 0.5}` and replace the `fetch()`
+  in `atlas-map.tsx` with a lookup against that table.
+- **Other layers**: F, Full+MODIS, Köppen C, Köppen D are all marked
+  `·PH` in the overlay toggle. To wire any of them live, generate a
+  matching PMTiles file for the layer, drop it in `public/tiles/`,
+  add a source + layer in `atlas-map.tsx`, and toggle visibility from
+  the overlay-button effect block.
+- **Country outlines on the globe**: optional polish. Add a vector
+  source (e.g. Natural Earth as a static `.pmtiles` or GeoJSON) and
+  layer it under the F+NPP raster.
+- **SHAP panel, site density** — already out of scope tonight.
+
+### What's still risky
+
+- **52 MB on a free Vercel plan**: cold-start the page once and watch
+  Vercel's bandwidth usage. If this becomes painful, split the
+  PMTiles into a smaller archive at lower max-zoom, or move it to an
+  external blob host (S3 / R2) and update `FNPP_PMTILES_URL`.
+- **Globe projection in WebKit/Safari**: I verified on Chromium
+  (ANGLE/SwiftShader). MapLibre 5's globe should work in Safari 17+
+  but I haven't smoke-tested. Worth opening on a Mac before sharing.
+
+---
+
+## Night 0 — site scaffold (earlier run)
+
+This section is the original Night 0 record, preserved verbatim.
+
+### TL;DR (Night 0)
 
 The site is fully scaffolded, builds clean (`pnpm build` passes with
 zero errors), and is ready to deploy to Vercel. Every page renders as

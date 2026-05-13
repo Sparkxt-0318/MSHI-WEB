@@ -21,7 +21,6 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.453.0",
-    "mapbox-gl": "^3.7.0",
     "maplibre-gl": "^5.24.0",
     "next": "14.2.15",
     "pmtiles": "^4.4.1",
@@ -31,7 +30,6 @@
     "tailwind-merge": "^2.5.4"
   },
   "devDependencies": {
-    "@types/mapbox-gl": "^3.4.0",
     "@types/mdx": "^2.0.13",
     "@types/node": "^20.16.13",
     "@types/react": "^18.3.12",
