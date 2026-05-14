@@ -26,7 +26,7 @@ export default function AboutPage() {
             <div className="flex gap-4">
               <dt className="w-32 text-ink-soft">ORCID</dt>
               <dd>
-                {siteConfig.orcid !== '[ORCID]' ? (
+                {(siteConfig.orcid as string) !== '[ORCID]' ? (
                   <Link
                     href={`https://orcid.org/${siteConfig.orcid}`}
                     className="link-arrow"
