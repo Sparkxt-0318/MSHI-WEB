@@ -7,7 +7,7 @@ export const siteConfig = {
   authorName: 'Siyeong Park',
   institution: '[Institution]',
   orcid: '[ORCID]',
-  email: '[email@placeholder]',
+  email: 'siyeong0318@gmail.com',
   year: '2025-2026',
   scienceRepo: 'https://github.com/Sparkxt-0318/MSHI',
   webRepo: 'https://github.com/Sparkxt-0318/MSHI-WEB',
