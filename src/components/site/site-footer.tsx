@@ -25,7 +25,14 @@ export function SiteFooter() {
               </div>
               <div className="flex gap-4">
                 <dt className="w-24 text-paper/50">ORCID</dt>
-                <dd>{siteConfig.orcid}</dd>
+                <dd>
+                  <Link
+                    href={`https://orcid.org/${siteConfig.orcid}`}
+                    className="border-b border-accent-pale text-accent-pale hover:border-paper hover:text-paper"
+                  >
+                    {siteConfig.orcid}
+                  </Link>
+                </dd>
               </div>
               <div className="flex gap-4">
                 <dt className="w-24 text-paper/50">Email</dt>
