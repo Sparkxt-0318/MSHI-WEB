@@ -12,7 +12,6 @@ export const siteConfig = {
   scienceRepo: 'https://github.com/Sparkxt-0318/MSHI',
   webRepo: 'https://github.com/Sparkxt-0318/MSHI-WEB',
   paperTitle: '[Paper title — to be supplied]',
-  paperVenue: '[Venue — to be supplied]',
   // Headline numbers from the F+NPP Asia → US transfer experiment.
   // These are the actual published research numbers, not placeholders.
   headline: {
