@@ -15,8 +15,8 @@ const PDF_PATH = '/paper.pdf';
 
 const BIBTEX = `@article{mshi${siteConfig.year},
   title         = {${siteConfig.paperTitle}},
-  author        = {${siteConfig.Siyeong Park}},
-  year          = {${siteConfig.2025-2026}},
+  author        = {${siteConfig.authorName}},
+  year          = {${siteConfig.year}},
   journal       = {${siteConfig.paperVenue}},
   url           = {${siteConfig.scienceRepo}}
 }`;
@@ -31,7 +31,7 @@ export default function PaperPage() {
             {siteConfig.paperTitle}
           </h1>
           <p className="mt-6 font-mono text-[0.8rem] uppercase tracking-meta text-ink-soft">
-            {siteConfig.Siyeong Park} · {siteConfig.paperVenue} · {siteConfig.year}
+            {siteConfig.authorName} · {siteConfig.paperVenue} · {siteConfig.year}
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">

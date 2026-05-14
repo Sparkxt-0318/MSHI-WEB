@@ -4,11 +4,11 @@
  * until the user supplies real values — never invent plausible-looking data.
  */
 export const siteConfig = {
-  authorName: '[Author Name]',
+  authorName: 'Siyeong Park',
   institution: '[Institution]',
   orcid: '[ORCID]',
   email: '[email@placeholder]',
-  year: 2026,
+  year: '2025-2026',
   scienceRepo: 'https://github.com/Sparkxt-0318/MSHI',
   webRepo: 'https://github.com/Sparkxt-0318/MSHI-WEB',
   paperTitle: '[Paper title — to be supplied]',
