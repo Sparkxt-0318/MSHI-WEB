@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Reveal } from '@/components/site/reveal';
 import { SectionLabel } from '@/components/site/section-label';
 import { PlaceholderFigure } from '@/components/site/placeholder-figure';
@@ -29,6 +30,78 @@ export function SectionMechanism() {
               feature set the model leans on at training time is not the
               feature set that drives Rs in the held-out continent.
             </figcaption>
+          </div>
+        </Reveal>
+
+        <Reveal delayMs={160}>
+          <div className="mx-auto mt-14 max-w-3xl">
+            <p className="meta-label text-ink-soft">
+              Three configurations tested for cross-continental transfer
+            </p>
+            <table className="mt-3 w-full border border-rule font-sans text-[0.92rem] text-ink">
+              <thead className="border-b border-rule bg-cream/60">
+                <tr>
+                  <th className="px-3 py-2 text-left font-mono text-[0.7rem] uppercase tracking-meta text-ink-soft">
+                    Configuration
+                  </th>
+                  <th className="px-3 py-2 text-right font-mono text-[0.7rem] uppercase tracking-meta text-ink-soft">
+                    Transfer R²
+                  </th>
+                  <th className="px-3 py-2 text-right font-mono text-[0.7rem] uppercase tracking-meta text-ink-soft">
+                    95% CI
+                  </th>
+                  <th className="px-3 py-2 text-left font-mono text-[0.7rem] uppercase tracking-meta text-ink-soft">
+                    Takeaway
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-rule">
+                  <td className="px-3 py-2 font-mono text-[0.85rem]">F (climate only)</td>
+                  <td className="px-3 py-2 text-right font-mono text-[0.85rem]">+0.127</td>
+                  <td className="px-3 py-2 text-right font-mono text-[0.78rem] text-ink-soft">
+                    [+0.020, +0.212]
+                  </td>
+                  <td className="px-3 py-2">
+                    Climate alone produces positive transfer.
+                  </td>
+                </tr>
+                <tr className="border-b border-rule bg-cream/40">
+                  <td className="px-3 py-2 font-mono text-[0.85rem] font-bold">F+NPP</td>
+                  <td className="px-3 py-2 text-right font-mono text-[0.85rem] font-bold">
+                    +0.145
+                  </td>
+                  <td className="px-3 py-2 text-right font-mono text-[0.78rem] text-ink-soft">
+                    [+0.026, +0.241]
+                  </td>
+                  <td className="px-3 py-2">
+                    <span className="font-bold">Best</span> — satellite NPP
+                    captures the biology signal that transfers.
+                  </td>
+                </tr>
+                <tr>
+                  <td className="px-3 py-2 font-mono text-[0.85rem]">Full+MODIS</td>
+                  <td className="px-3 py-2 text-right font-mono text-[0.85rem]">+0.072</td>
+                  <td className="px-3 py-2 text-right font-mono text-[0.78rem] text-ink-soft">
+                    [−0.084, +0.189]
+                  </td>
+                  <td className="px-3 py-2">
+                    Adding soil features hurts; CI spans zero.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <p className="mt-3 text-center font-mono text-[0.7rem] text-ink-soft">
+              Full 5-configuration analysis (incl. Köppen-zone
+              stratification) is on the{' '}
+              <Link
+                href="/methods#configurations"
+                className="border-b border-accent text-accent hover:text-ink hover:border-ink"
+              >
+                methods page
+              </Link>
+              .
+            </p>
           </div>
         </Reveal>
 

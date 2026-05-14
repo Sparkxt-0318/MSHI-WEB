@@ -12,7 +12,7 @@ import {
   cellToResponse,
   noPredictionResponse,
 } from './atlas-lookup';
-import { Camera, Search } from 'lucide-react';
+import { Camera, Info, Search, X } from 'lucide-react';
 
 // Asia training-domain bounding box for the F+NPP model. Any geocoded
 // search result that falls outside this rectangle is flagged
@@ -100,13 +100,9 @@ function ensurePMTilesProtocol() {
 const OVERLAY_LAYERS: ReadonlyArray<{
   id: AtlasOverlayLayer;
   label: string;
-  live: boolean;
 }> = [
-  { id: 'F', label: 'F', live: false },
-  { id: 'F+NPP', label: 'F+NPP', live: true },
-  { id: 'Full+MODIS', label: 'Full+MODIS', live: false },
-  { id: 'Koppen-C', label: 'Köppen C', live: false },
-  { id: 'Koppen-D', label: 'Köppen D', live: false },
+  { id: 'F+NPP', label: 'F+NPP' },
+  { id: 'Full+MODIS', label: 'Full+MODIS' },
 ];
 
 const FNPP_SOURCE_ID = 'fnpp-pmtiles';
@@ -193,6 +189,13 @@ export function AtlasMap() {
   const suggestAbortRef = React.useRef<AbortController | null>(null);
   const searchBoxRef = React.useRef<HTMLDivElement | null>(null);
   const [screenshotSaved, setScreenshotSaved] = React.useState(false);
+  const [infoOpen, setInfoOpen] = React.useState(false);
+  // n_train + n_us strings for the legend, sourced from the lookup file
+  // metadata so the numbers stay in sync with whichever model is active.
+  const [modelMeta, setModelMeta] = React.useState<{
+    fnpp: { n: number };
+    fullmodis: { n: number };
+  } | null>(null);
   const [lookupReady, setLookupReady] = React.useState(false);
   const [lookupError, setLookupError] = React.useState<string | null>(null);
   const [showSites, setShowSites] = React.useState(false);
@@ -204,6 +207,30 @@ export function AtlasMap() {
   // real F+NPP XGBoost prediction + SHAP + biome + Köppen + distances.
   // If the snapped cell isn't in the lookup (oceans, lakes, IGBP-water,
   // or outside Asia), shows a "no prediction" panel.
+  // Mirror activeOverlay in a ref so showDetailAt can read the *current*
+  // layer without forcing a useCallback recreation (and a cascade through
+  // map.on('click') / pin handlers / search handler).
+  const activeOverlayRef = React.useRef(activeOverlay);
+  React.useEffect(() => {
+    activeOverlayRef.current = activeOverlay;
+  }, [activeOverlay]);
+
+  // When the user toggles between F+NPP and Full+MODIS while the detail
+  // panel is open, re-resolve the panel so it shows the new model's
+  // prediction at the same cell (rather than a stale snapshot from the
+  // previous layer).
+  React.useEffect(() => {
+    if (!response || response.outOfDomain || response.noPrediction) return;
+    void showDetailAt(
+      response.coord.lat,
+      response.coord.lon,
+      response.name,
+      false,
+    );
+    // showDetailAt is stable; only fire when activeOverlay actually flips.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeOverlay]);
+
   const showDetailAt = React.useCallback(
     async (
       lat: number,
@@ -213,6 +240,8 @@ export function AtlasMap() {
     ) => {
       try {
         const cache = await loadLookup();
+        const layer = activeOverlayRef.current;
+        const meta = cache.models[layer === 'Full+MODIS' ? 'fullmodis' : 'fnpp'];
         if (outOfDomain) {
           // Geocoder returned a non-Asia location: keep the existing
           // "outside training domain" panel.
@@ -222,7 +251,7 @@ export function AtlasMap() {
               rs_anomaly: 1.0,
               rs_anomaly_ci_low: 1.0,
               rs_anomaly_ci_high: 1.0,
-              configuration: cache.model.name,
+              configuration: meta.name,
             },
             shap_top3: [],
             biome: { igbp_class: '—', igbp_code: -1 },
@@ -238,10 +267,10 @@ export function AtlasMap() {
         }
         const cell = lookupCellSync(cache, lat, lon);
         if (!cell) {
-          setResponse(noPredictionResponse(lat, lon, cityName));
+          setResponse(noPredictionResponse(lat, lon, layer, cityName));
           return;
         }
-        setResponse(cellToResponse(cache, cell, cityName));
+        setResponse(cellToResponse(cache, cell, layer, cityName));
       } catch (err) {
         console.error('[atlas] lookup failed', err);
         setLookupError(
@@ -255,7 +284,13 @@ export function AtlasMap() {
   // Pre-warm the lookup once on mount so the first click is instant.
   React.useEffect(() => {
     loadLookup()
-      .then(() => setLookupReady(true))
+      .then((cache) => {
+        setLookupReady(true);
+        setModelMeta({
+          fnpp: { n: cache.models.fnpp.training_n_asia },
+          fullmodis: { n: cache.models.fullmodis.training_n_asia },
+        });
+      })
       .catch((err) => {
         console.error('[atlas] lookup load failed', err);
         setLookupError(err instanceof Error ? err.message : 'Lookup failed');
@@ -824,6 +859,7 @@ export function AtlasMap() {
                 return (
                   <button
                     key={l.id}
+                    data-mshi-overlay-button={l.id}
                     onClick={() => setActiveOverlay(l.id)}
                     className={`border px-2 py-1 font-mono text-[0.7rem] uppercase tracking-meta transition-colors ${
                       isActive
@@ -832,24 +868,34 @@ export function AtlasMap() {
                     }`}
                   >
                     {l.label}
-                    {!l.live ? (
-                      <span className="ml-1 text-[0.55rem] text-accent">·PH</span>
-                    ) : null}
                   </button>
                 );
               })}
             </div>
-            <p className="mt-1 font-mono text-[0.6rem] leading-snug text-ink-soft">
-              F+NPP live (MapLibre globe + PMTiles). Others awaiting precomputed
-              rasters.
+            <p className="mt-1 max-w-[20rem] font-mono text-[0.6rem] leading-snug text-ink-soft">
+              Toggle between F+NPP (best transfer) and Full+MODIS (more
+              features, worse transfer). Click any cell for real per-cell
+              predictions.
             </p>
           </div>
 
           {/* Bottom strip: legend + actions */}
           <div className="pointer-events-auto absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-6 border border-rule bg-paper/95 px-5 py-3 backdrop-blur-sm">
             <div>
-              <p className="meta-label text-ink-soft">
-                Rs anomaly · F+NPP · n=615
+              <p className="meta-label flex items-center gap-1 text-ink-soft">
+                Rs anomaly · {activeOverlay} ·{' '}
+                {modelMeta
+                  ? `n=${activeOverlay === 'Full+MODIS' ? modelMeta.fullmodis.n : modelMeta.fnpp.n}`
+                  : '—'}
+                <button
+                  data-mshi-anomaly-info
+                  type="button"
+                  onClick={() => setInfoOpen(true)}
+                  aria-label="What does this anomaly mean?"
+                  className="ml-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border border-rule text-ink-soft hover:border-ink hover:text-ink"
+                >
+                  <Info className="h-2.5 w-2.5" />
+                </button>
               </p>
               <div className="mt-1 flex items-center gap-2">
                 <div
@@ -910,8 +956,72 @@ export function AtlasMap() {
             response={response}
             onClose={() => setResponse(null)}
           />
+
+          {infoOpen ? (
+            <AnomalyInfoModal onClose={() => setInfoOpen(false)} />
+          ) : null}
         </>
       )}
+    </div>
+  );
+}
+
+function AnomalyInfoModal({ onClose }: { onClose: () => void }) {
+  // Close on Escape.
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  return (
+    <div
+      data-mshi-info-modal
+      role="dialog"
+      aria-modal="true"
+      aria-label="About the Rs anomaly metric"
+      className="absolute inset-0 z-40 flex items-center justify-center bg-ink/40 p-6"
+      onPointerDown={(ev) => {
+        // Click on the backdrop closes; clicks inside the card stop here.
+        if (ev.target === ev.currentTarget) onClose();
+      }}
+    >
+      <div className="relative max-w-md border border-rule bg-paper shadow-xl">
+        <div className="flex items-center justify-between border-b border-rule px-5 py-3">
+          <p className="meta-label">About · anomaly</p>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="text-ink-soft hover:text-accent"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="space-y-3 px-5 py-4 text-[0.92rem] leading-relaxed text-ink">
+          <p>
+            <span className="font-serif font-bold">What this map shows:</span>{' '}
+            an anomaly ratio between the model&apos;s prediction and a
+            climate baseline. Values near 1.0 mean the model agrees with what
+            climate alone would predict — biology isn&apos;t adding extra
+            information. Values below 1.0 mean the biology signal (from
+            MODIS NPP) suggests less microbial activity than climate alone
+            would expect. Values above 1.0 mean the biology signal suggests
+            more.
+          </p>
+          <p>
+            <span className="font-serif font-bold">Example:</span> Mongolia
+            at anomaly = 0.78 means the model predicts ~22 % less microbial
+            activity than climate would predict alone, because vegetation
+            productivity (NPP) is low. The Indo-Gangetic Plain at
+            anomaly = 1.18 means ~18 % more activity than climate would
+            predict, because intensive agriculture creates elevated
+            productivity.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

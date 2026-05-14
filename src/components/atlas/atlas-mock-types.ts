@@ -1,9 +1,8 @@
 /**
- * Atlas click-response schema. As of Night 3 (Phase 3), this is built
- * client-side by the AtlasMap component from the real precomputed lookup
- * at /public/data/atlas_lookup.json — see atlas-map.tsx's
- * `respondAt(lat, lon, name?)`. The detail panel still renders this
- * AtlasResponse shape; only the source of the data changed.
+ * Atlas click-response schema. As of Night 4, atlas_lookup.json schema v3
+ * carries per-cell predictions for BOTH F+NPP and Full+MODIS. The
+ * AtlasMap component picks one model based on the user-toggled overlay
+ * and adapts its block into AtlasResponse for the detail panel.
  */
 export interface AtlasResponse {
   coord: { lat: number; lon: number; _grid_id?: string };
@@ -16,12 +15,9 @@ export interface AtlasResponse {
   };
   /** Top-3 SHAP entries. `key` is the raw model feature key (e.g. "npp"),
    *  joinable against AtlasResponse.features and the feature knowledge
-   *  base in `src/lib/feature-descriptions.ts`. Older payloads may omit
-   *  `key`; the UI falls back to display-name lookup in that case. */
+   *  base in `src/lib/feature-descriptions.ts`. */
   shap_top3: Array<{ feature: string; key?: string; value: number }>;
-  /** Raw F+NPP model input values at this cell, keyed by model feature
-   *  name. Present on atlas_lookup.v2 cells; older v1 payloads will omit
-   *  this field. */
+  /** Raw model input values at this cell, keyed by feature name. */
   features?: Record<string, number>;
   biome: { igbp_class: string; igbp_code: number };
   koppen: { zone: string; label: string };
@@ -36,24 +32,39 @@ export interface AtlasResponse {
   _note?: string;
 }
 
-/**
- * Raw cell shape inside atlas_lookup.json["cells"]. Produced by
- * scripts/build_atlas_lookup.py in the MSHI repo.
- */
-export interface AtlasLookupCell {
-  lat: number;
-  lon: number;
+/** Per-model prediction block stored at each lookup cell (v3 schema). */
+export interface AtlasModelBlock {
   pred_log_rs: number;
   pred_climate_log_rs: number;
   anomaly: number;
   shap_top3: Array<{ feature: string; key?: string; value: number }>;
   features?: Record<string, number>;
+}
+
+/** Raw cell shape inside atlas_lookup.json["cells"] for schema v3. */
+export interface AtlasLookupCell {
+  lat: number;
+  lon: number;
+  fnpp: AtlasModelBlock;
+  fullmodis: AtlasModelBlock;
   biome_code: number;
   biome: string;
   koppen_code: string;
   koppen: string;
   nearest_train_km: number;
   nearest_us_km: number;
+}
+
+/** Per-model metadata at the file root (v3 schema). */
+export interface AtlasModelMeta {
+  name: string;
+  n_features: number;
+  features: string[];
+  training_n_asia: number;
+  validation_n_us: number;
+  transfer_r2: number;
+  transfer_ci_low: number;
+  transfer_ci_high: number;
 }
 
 export interface AtlasLookupFile {
@@ -68,22 +79,14 @@ export interface AtlasLookupFile {
     };
     n_cells: number;
   };
-  model: {
-    name: string;
-    n_features: number;
-    features: string[];
-    training_n_asia: number;
-    validation_n_us: number;
-    transfer_r2: number;
-    transfer_ci_low: number;
-    transfer_ci_high: number;
+  models: {
+    fnpp: AtlasModelMeta;
+    fullmodis: AtlasModelMeta;
   };
   cells: AtlasLookupCell[];
 }
 
-export type AtlasOverlayLayer =
-  | 'F'
-  | 'F+NPP'
-  | 'Full+MODIS'
-  | 'Koppen-C'
-  | 'Koppen-D';
+/** Overlay choices the user can toggle. Only F+NPP and Full+MODIS are
+ *  live as of Night 4 — earlier placeholder configs (F, Köppen-C/D)
+ *  have been removed from the UI per the methods-table refactor. */
+export type AtlasOverlayLayer = 'F+NPP' | 'Full+MODIS';
