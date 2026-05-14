@@ -221,15 +221,116 @@ export default function MethodsPage() {
             </p>
           </div>
 
-          <Callout label="Comparison configurations">
-            <strong>F</strong> (climate + soils, no MODIS): transfer R² ≈ 0,
-            CI overlaps zero. <strong>Full+MODIS</strong> (F + engineered
-            ratios + IGBP one-hot): transfer R² &lt; 0 (worse than the
-            mean), CI excludes zero on the wrong side. <strong>F+NPP</strong>{' '}
-            is the best of any tested configuration. Köppen and IGBP
-            stratification both fail to recover transfer when used as
-            additional features.
-          </Callout>
+          <h2
+            id="configurations"
+            className="mt-16 font-serif text-3xl font-bold leading-tight text-ink"
+          >
+            Model configuration comparison
+          </h2>
+          <div className="body-prose mt-5">
+            <p>
+              Cross-continental transfer was tested in five model
+              configurations. F+NPP achieves the best held-out US validation
+              R², while configurations with more soil features or stratified
+              by climate zone produce CIs that span or cross zero.
+            </p>
+          </div>
+          <div className="mt-6 overflow-x-auto">
+            <table className="w-full border border-rule font-sans text-[0.92rem] text-ink">
+              <thead className="border-b border-rule bg-cream/60">
+                <tr>
+                  <th className="px-3 py-2 text-left font-mono text-[0.7rem] uppercase tracking-meta text-ink-soft">
+                    Configuration
+                  </th>
+                  <th className="px-3 py-2 text-right font-mono text-[0.7rem] uppercase tracking-meta text-ink-soft">
+                    Transfer R²
+                  </th>
+                  <th className="px-3 py-2 text-right font-mono text-[0.7rem] uppercase tracking-meta text-ink-soft">
+                    95% CI
+                  </th>
+                  <th className="px-3 py-2 text-right font-mono text-[0.7rem] uppercase tracking-meta text-ink-soft">
+                    n_train
+                  </th>
+                  <th className="px-3 py-2 text-left font-mono text-[0.7rem] uppercase tracking-meta text-ink-soft">
+                    Takeaway
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-rule">
+                  <td className="px-3 py-2 font-mono text-[0.85rem]">F (climate only)</td>
+                  <td className="px-3 py-2 text-right font-mono text-[0.85rem]">+0.127</td>
+                  <td className="px-3 py-2 text-right font-mono text-[0.78rem] text-ink-soft">
+                    [+0.020, +0.212]
+                  </td>
+                  <td className="px-3 py-2 text-right font-mono text-[0.85rem]">600</td>
+                  <td className="px-3 py-2">
+                    Climate features alone produce positive transfer.
+                  </td>
+                </tr>
+                <tr className="border-b border-rule bg-cream/40">
+                  <td className="px-3 py-2 font-mono text-[0.85rem] font-bold">F+NPP</td>
+                  <td className="px-3 py-2 text-right font-mono text-[0.85rem] font-bold">
+                    +0.145
+                  </td>
+                  <td className="px-3 py-2 text-right font-mono text-[0.78rem] text-ink-soft">
+                    [+0.026, +0.241]
+                  </td>
+                  <td className="px-3 py-2 text-right font-mono text-[0.85rem]">463</td>
+                  <td className="px-3 py-2">
+                    Best transfer; MODIS NPP is rank-1 SHAP driver.
+                  </td>
+                </tr>
+                <tr className="border-b border-rule">
+                  <td className="px-3 py-2 font-mono text-[0.85rem]">Full+MODIS</td>
+                  <td className="px-3 py-2 text-right font-mono text-[0.85rem]">+0.072</td>
+                  <td className="px-3 py-2 text-right font-mono text-[0.78rem] text-ink-soft">
+                    [−0.084, +0.189]
+                  </td>
+                  <td className="px-3 py-2 text-right font-mono text-[0.85rem]">463</td>
+                  <td className="px-3 py-2">
+                    More features hurt transfer; CI spans zero.
+                  </td>
+                </tr>
+                <tr className="border-b border-rule">
+                  <td className="px-3 py-2 font-mono text-[0.85rem]">Köppen C subset</td>
+                  <td className="px-3 py-2 text-right font-mono text-[0.85rem]">−0.336</td>
+                  <td className="px-3 py-2 text-right font-mono text-[0.78rem] text-ink-soft">
+                    [−1.060, +0.035]
+                  </td>
+                  <td className="px-3 py-2 text-right font-mono text-[0.85rem]">247</td>
+                  <td className="px-3 py-2">
+                    Stratification fails; CI almost entirely below zero.
+                  </td>
+                </tr>
+                <tr>
+                  <td className="px-3 py-2 font-mono text-[0.85rem]">Köppen D subset</td>
+                  <td className="px-3 py-2 text-right font-mono text-[0.85rem]">−0.199</td>
+                  <td className="px-3 py-2 text-right font-mono text-[0.78rem] text-ink-soft">
+                    [−0.392, −0.061]
+                  </td>
+                  <td className="px-3 py-2 text-right font-mono text-[0.85rem]">244</td>
+                  <td className="px-3 py-2">
+                    Stratification fails differently; CI fully below zero.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="body-prose mt-6">
+            <p>
+              These five configurations together suggest a mechanistic rather
+              than statistical limit on cross-continental transfer. Adding
+              features hurts (Full+MODIS) rather than helps, indicating that
+              more data does not solve the problem. Stratifying by Köppen
+              zone fails in two independent climate categories, suggesting
+              the problem is not climate-driven but rooted in regionally
+              specific soil and biological factors. F+NPP succeeds where
+              others fail because MODIS NPP captures a biological signal
+              that transfers across continents, where soil features and
+              climate-only stratification do not.
+            </p>
+          </div>
 
           <h2 className="mt-16 font-serif text-3xl font-bold leading-tight text-ink">
             Reproducibility

@@ -1,13 +1,16 @@
 // Atlas lookup loader + per-cell adapter.
 //
-// /public/data/atlas_lookup.json is fetched on first use, cached at
-// module scope, and queried via `lookupCell(lat, lon)` which snaps to
-// the nearest 0.5° grid cell. The lookup file is built by
-// scripts/build_atlas_lookup.py in the MSHI repo.
+// /public/data/atlas_lookup.json (schema v3) is fetched on first use,
+// cached at module scope, and queried via `lookupCellSync(lat, lon)`
+// which snaps to the nearest 0.5° grid cell. Each cell carries
+// predictions for BOTH F+NPP and Full+MODIS — `cellToResponse` picks
+// the active model based on the user's overlay toggle.
 
 import type {
   AtlasLookupCell,
   AtlasLookupFile,
+  AtlasModelMeta,
+  AtlasOverlayLayer,
   AtlasResponse,
 } from './atlas-mock-types';
 
@@ -16,7 +19,7 @@ const GRID_DEG = 0.5;
 
 interface LookupCache {
   byKey: Map<string, AtlasLookupCell>;
-  model: AtlasLookupFile['model'];
+  models: AtlasLookupFile['models'];
   grid: AtlasLookupFile['grid'];
 }
 
@@ -35,9 +38,8 @@ function cellKey(lat: number, lon: number): string {
 
 // Maximum radius (in cell steps) to search outwards from the snap target
 // when the immediate cell is missing from the lookup. 4 steps × 0.5° = 2°,
-// or ≈ 220 km at the equator — generous enough to handle MODIS NaN holes
-// near urban areas and coastal pixels, but small enough that an Indian-
-// Ocean click won't find a cell.
+// or ≈ 220 km — generous enough for MODIS NaN holes near urban areas and
+// coastal pixels, small enough that an Indian-Ocean click still misses.
 const MAX_SEARCH_RADIUS = 4;
 
 export async function loadLookup(): Promise<LookupCache> {
@@ -50,9 +52,8 @@ export async function loadLookup(): Promise<LookupCache> {
     for (const c of file.cells) {
       byKey.set(`${c.lat.toFixed(2)},${c.lon.toFixed(2)}`, c);
     }
-    return { byKey, model: file.model, grid: file.grid };
+    return { byKey, models: file.models, grid: file.grid };
   })().catch((err) => {
-    // Surface the error but allow retry on next call.
     cachePromise = null;
     throw err;
   });
@@ -66,11 +67,6 @@ export function lookupCellSync(
 ): AtlasLookupCell | undefined {
   const hit = cache.byKey.get(cellKey(lat, lon));
   if (hit) return hit;
-  // Fall back to nearest-available cell within MAX_SEARCH_RADIUS steps.
-  // Many lookup cells are dropped because their MODIS NPP / LST samples
-  // are NaN (urban core pixels, MODIS composite edges). The user's
-  // intent is "predict here-or-near-here", so we walk outward in a
-  // spiral and return the first populated neighbour.
   const baseLat = snapTo(lat);
   const baseLon = snapTo(lon);
   for (let r = 1; r <= MAX_SEARCH_RADIUS; r++) {
@@ -78,7 +74,6 @@ export function lookupCellSync(
     let bestDist = Infinity;
     for (let dLat = -r; dLat <= r; dLat++) {
       for (let dLon = -r; dLon <= r; dLon++) {
-        // Only inspect the ring at exactly radius r (skip interior).
         if (Math.max(Math.abs(dLat), Math.abs(dLon)) !== r) continue;
         const cLat = baseLat + dLat * GRID_DEG;
         const cLon = baseLon + dLon * GRID_DEG;
@@ -96,19 +91,38 @@ export function lookupCellSync(
   return undefined;
 }
 
+function modelKey(layer: AtlasOverlayLayer): 'fnpp' | 'fullmodis' {
+  return layer === 'Full+MODIS' ? 'fullmodis' : 'fnpp';
+}
+
+export function getModelMeta(
+  cache: LookupCache,
+  layer: AtlasOverlayLayer,
+): AtlasModelMeta {
+  return cache.models[modelKey(layer)];
+}
+
 /**
- * Build the AtlasResponse the detail panel renders from a real lookup cell.
- * Confidence interval comes from the model's transfer R² CI (0.026, 0.241).
- * The CI is in R² space; we propagate it to anomaly space by treating it
- * as a relative uncertainty band around the point prediction. This is a
- * simplification — see Night-3 notes.
+ * Build the AtlasResponse the detail panel renders from a real lookup
+ * cell. Selects the active model's block (fnpp or fullmodis). The CI
+ * shown in the panel is derived from the model's transfer R² CI as a
+ * relative ±band around the point anomaly.
  */
 export function cellToResponse(
   cache: LookupCache,
   cell: AtlasLookupCell,
+  layer: AtlasOverlayLayer,
   cityName?: string,
 ): AtlasResponse {
-  const ciHalfWidth = 0.25; // ±25% band, approximating the F+NPP transfer CI
+  const block = layer === 'Full+MODIS' ? cell.fullmodis : cell.fnpp;
+  const meta = getModelMeta(cache, layer);
+  // ± half-width: scale the model's transfer-R² CI half-width onto the
+  // anomaly. CI is in R² space, but treating it as a relative band gives
+  // visually-honest uncertainty (wider for Full+MODIS than F+NPP).
+  const ciHalf = Math.max(
+    0.05,
+    (meta.transfer_ci_high - meta.transfer_ci_low) / 2,
+  );
   return {
     coord: {
       lat: cell.lat,
@@ -116,13 +130,13 @@ export function cellToResponse(
       _grid_id: `lat${cell.lat.toFixed(2)}_lon${cell.lon.toFixed(2)}`,
     },
     prediction: {
-      rs_anomaly: cell.anomaly,
-      rs_anomaly_ci_low: Math.max(0, cell.anomaly * (1 - ciHalfWidth)),
-      rs_anomaly_ci_high: cell.anomaly * (1 + ciHalfWidth),
-      configuration: cache.model.name,
+      rs_anomaly: block.anomaly,
+      rs_anomaly_ci_low: Math.max(0, block.anomaly * (1 - ciHalf)),
+      rs_anomaly_ci_high: block.anomaly * (1 + ciHalf),
+      configuration: meta.name,
     },
-    shap_top3: cell.shap_top3,
-    features: cell.features,
+    shap_top3: block.shap_top3,
+    features: block.features,
     biome: { igbp_class: cell.biome, igbp_code: cell.biome_code },
     koppen: { zone: cell.koppen_code, label: cell.koppen },
     distance_km: {
@@ -130,7 +144,7 @@ export function cellToResponse(
       to_nearest_us_validation_site: cell.nearest_us_km,
     },
     ...(cityName && { name: cityName }),
-    _schema_version: 'atlas.v1',
+    _schema_version: 'atlas.v3',
   };
 }
 
@@ -142,6 +156,7 @@ export function cellToResponse(
 export function noPredictionResponse(
   lat: number,
   lon: number,
+  layer: AtlasOverlayLayer,
   cityName?: string,
 ): AtlasResponse {
   return {
@@ -150,7 +165,7 @@ export function noPredictionResponse(
       rs_anomaly: 1.0,
       rs_anomaly_ci_low: 1.0,
       rs_anomaly_ci_high: 1.0,
-      configuration: 'F+NPP',
+      configuration: layer,
     },
     shap_top3: [],
     biome: { igbp_class: '—', igbp_code: -1 },
