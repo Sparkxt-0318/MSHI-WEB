@@ -6,13 +6,12 @@
 export const siteConfig = {
   authorName: 'Siyeong Park',
   institution: '[Institution]',
-  orcid: '[ORCID]',
+  orcid: '0009-0001-8848-207X',
   email: 'siyeong0318@gmail.com',
   year: '2025-2026',
   scienceRepo: 'https://github.com/Sparkxt-0318/MSHI',
   webRepo: 'https://github.com/Sparkxt-0318/MSHI-WEB',
-  paperTitle: '[Paper title — to be supplied]',
-  paperVenue: '[Venue — to be supplied]',
+  paperTitle: 'Real-Time Electrochemical Assessment of Soil Health Through Electrochemically Active Biofilm Formation',
   // Headline numbers from the F+NPP Asia → US transfer experiment.
   // These are the actual published research numbers, not placeholders.
   headline: {

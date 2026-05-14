@@ -1,14 +1,6 @@
 import Link from 'next/link';
 import { siteConfig } from '@/lib/site-config';
 
-const BIBTEX = `@misc{mshi${siteConfig.year},
-  title         = {${siteConfig.paperTitle}},
-  author        = {${siteConfig.authorName}},
-  year          = {${siteConfig.year}},
-  howpublished  = {${siteConfig.paperVenue}},
-  url           = {${siteConfig.scienceRepo}}
-}`;
-
 export function SiteFooter() {
   return (
     <footer className="bg-ink text-paper">
@@ -33,7 +25,14 @@ export function SiteFooter() {
               </div>
               <div className="flex gap-4">
                 <dt className="w-24 text-paper/50">ORCID</dt>
-                <dd>{siteConfig.orcid}</dd>
+                <dd>
+                  <Link
+                    href={`https://orcid.org/${siteConfig.orcid}`}
+                    className="border-b border-accent-pale text-accent-pale hover:border-paper hover:text-paper"
+                  >
+                    {siteConfig.orcid}
+                  </Link>
+                </dd>
               </div>
               <div className="flex gap-4">
                 <dt className="w-24 text-paper/50">Email</dt>
@@ -53,20 +52,6 @@ export function SiteFooter() {
             </dl>
           </div>
 
-          {/* Citation block */}
-          <div className="md:col-span-7">
-            <p className="font-mono text-[0.7rem] uppercase tracking-meta text-accent-pale">
-              How to cite this work
-            </p>
-            <pre className="mt-3 overflow-x-auto whitespace-pre-wrap break-words border border-paper/15 bg-paper/[0.03] p-5 font-mono text-[0.72rem] leading-relaxed text-paper/90">
-              {BIBTEX}
-            </pre>
-            <p className="mt-4 font-mono text-[0.7rem] text-paper/40">
-              [Author Name] / [Institution] / [ORCID] are placeholders. Update in
-              <span className="mx-1 text-accent-pale">src/lib/site-config.ts</span>
-              to populate citation, author block, and metadata across the site.
-            </p>
-          </div>
         </div>
 
         {/* Bottom rule */}
