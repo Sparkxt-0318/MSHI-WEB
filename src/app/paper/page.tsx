@@ -97,33 +97,6 @@ export default function PaperPage() {
         </div>
       </section>
 
-      <section className="section-band bg-paper">
-        <div className="container-narrow">
-          <h2 className="font-serif text-2xl font-bold text-ink">How to cite</h2>
-          <pre className="mt-4 overflow-x-auto whitespace-pre-wrap break-words border border-rule bg-cream/60 p-5 font-mono text-[0.78rem] leading-relaxed text-ink">
-            {BIBTEX}
-          </pre>
-
-          <p className="mt-6 max-w-prose font-mono text-[0.72rem] leading-relaxed text-ink-soft">
-            Title, venue, and journal are placeholders. Update them in
-            <span className="mx-1 text-accent">src/lib/site-config.ts</span>
-            to populate citations across the site.
-          </p>
-
-          <p className="mt-12 font-mono text-sm text-ink-soft">
-            Code and data:{' '}
-            <Link
-              href={siteConfig.scienceRepo}
-              className="link-arrow"
-              target="_blank"
-              rel="noreferrer noopener"
-            >
-              github.com/Sparkxt-0318/MSHI
-            </Link>
-          </p>
-        </div>
-      </section>
-
       <SiteFooter />
     </>
   );
