@@ -29,6 +29,42 @@ function isInAsia(lng: number, lat: number): boolean {
   );
 }
 
+// Photon's GeoJSON response shape, narrowed to the fields we read.
+interface PhotonFeature {
+  geometry?: { coordinates?: [number, number] };
+  properties?: {
+    name?: string;
+    city?: string;
+    country?: string;
+    state?: string;
+    osm_value?: string;
+  };
+}
+
+/** Pick the readable display name from a Photon feature, with a Latin-ASCII
+ *  fallback to the user's typed query so we don't surface localized
+ *  scripts ("서울특별시") for a Latin query ("Seoul"). */
+function photonDisplayName(feat: PhotonFeature, fallback: string): string {
+  const rawName =
+    feat.properties?.name ??
+    feat.properties?.city ??
+    feat.properties?.country ??
+    fallback;
+  const isLatinAscii = /^[\x20-\x7F]+$/.test(rawName);
+  if (isLatinAscii) return rawName;
+  return fallback
+    .split(/\s+/)
+    .map((w) => (w.length ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(' ');
+}
+
+/** Secondary label for a suggestion row ("Shanghai, China"). */
+function photonSecondaryLabel(feat: PhotonFeature): string {
+  const country = feat.properties?.country;
+  const state = feat.properties?.state;
+  return [state, country].filter(Boolean).join(', ');
+}
+
 // PMTiles file served as a Vercel static asset out of public/tiles/.
 // MapLibre talks to it through the `pmtiles://` protocol registered below.
 const FNPP_PMTILES_URL = 'pmtiles:///tiles/mshi_f_npp_anomaly.pmtiles';
@@ -151,6 +187,12 @@ export function AtlasMap() {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [searchError, setSearchError] = React.useState<string | null>(null);
   const [searching, setSearching] = React.useState(false);
+  const [suggestions, setSuggestions] = React.useState<PhotonFeature[]>([]);
+  const [highlightIdx, setHighlightIdx] = React.useState<number>(-1);
+  const [suggestionsOpen, setSuggestionsOpen] = React.useState(false);
+  const suggestAbortRef = React.useRef<AbortController | null>(null);
+  const searchBoxRef = React.useRef<HTMLDivElement | null>(null);
+  const [screenshotSaved, setScreenshotSaved] = React.useState(false);
   const [lookupReady, setLookupReady] = React.useState(false);
   const [lookupError, setLookupError] = React.useState<string | null>(null);
   const [showSites, setShowSites] = React.useState(false);
@@ -220,56 +262,62 @@ export function AtlasMap() {
       });
   }, []);
 
+  // Shared "fly the globe to this feature and open the detail panel"
+  // logic used by both the submit (Enter key / search button) and
+  // autocomplete-suggestion click paths.
+  const applyFeature = React.useCallback(
+    (feat: PhotonFeature, fallbackName: string) => {
+      const map = mapRef.current;
+      const coords = feat.geometry?.coordinates;
+      if (!map || !coords || coords.length < 2) {
+        setSearchError('No location found — try a different query');
+        return;
+      }
+      const [lng, lat] = coords;
+      const displayName = photonDisplayName(feat, fallbackName);
+      const inAsia = isInAsia(lng, lat);
+
+      // Close the suggestions dropdown the moment we commit to a selection.
+      setSuggestionsOpen(false);
+      setSuggestions([]);
+      setHighlightIdx(-1);
+      setSearchQuery(displayName);
+      setSearchError(null);
+
+      map.flyTo({ center: [lng, lat], zoom: 4, duration: 2000 });
+      map.once('moveend', () => {
+        void showDetailAt(lat, lng, displayName, !inAsia);
+      });
+    },
+    [showDetailAt],
+  );
+
   const handleSearchSubmit = React.useCallback(
     async (e?: React.FormEvent) => {
       e?.preventDefault();
       const q = searchQuery.trim();
       if (!q) return;
-      const map = mapRef.current;
-      if (!map) return;
+
+      // If the user pressed Enter while a suggestion was highlighted, prefer
+      // that — it matches their visible selection.
+      if (suggestionsOpen && highlightIdx >= 0 && highlightIdx < suggestions.length) {
+        applyFeature(suggestions[highlightIdx], q);
+        return;
+      }
 
       setSearchError(null);
       setSearching(true);
       try {
-        const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=1`;
+        const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=1&lang=en`;
         const res = await fetch(url);
         if (!res.ok) throw new Error(`Photon API ${res.status}`);
-        const json = (await res.json()) as {
-          features?: Array<{
-            geometry?: { coordinates?: [number, number] };
-            properties?: { name?: string; city?: string; country?: string };
-          }>;
-        };
+        const json = (await res.json()) as { features?: PhotonFeature[] };
         const feat = json.features?.[0];
-        const coords = feat?.geometry?.coordinates;
-        if (!feat || !coords || coords.length < 2) {
+        if (!feat) {
           setSearchError('No location found — try a different query');
-          setSearching(false);
           return;
         }
-        const [lng, lat] = coords;
-        // Photon often returns the localized name (e.g. "서울특별시" for
-        // Seoul). Prefer the user's query unless it lacks letters; that
-        // keeps the panel's "Location" header readable in the user's
-        // expected language without forcing extra geocoder calls.
-        const rawName =
-          feat.properties?.name ??
-          feat.properties?.city ??
-          feat.properties?.country ??
-          q;
-        const isLatinAscii = /^[\x20-\x7F]+$/.test(rawName);
-        const titleCased = q
-          .split(/\s+/)
-          .map((w) => (w.length ? w[0].toUpperCase() + w.slice(1) : w))
-          .join(' ');
-        const displayName = isLatinAscii ? rawName : titleCased;
-
-        const inAsia = isInAsia(lng, lat);
-
-        map.flyTo({ center: [lng, lat], zoom: 4, duration: 2000 });
-        map.once('moveend', () => {
-          void showDetailAt(lat, lng, displayName, !inAsia);
-        });
+        applyFeature(feat, q);
       } catch (err) {
         console.error('[atlas search] failed', err);
         setSearchError('No location found — try a different query');
@@ -277,8 +325,108 @@ export function AtlasMap() {
         setSearching(false);
       }
     },
-    [searchQuery, showDetailAt],
+    [searchQuery, suggestionsOpen, highlightIdx, suggestions, applyFeature],
   );
+
+  // Debounced Photon suggestion fetch — runs 280 ms after the user stops
+  // typing. Earlier in-flight requests are aborted so we don't render
+  // stale suggestions.
+  React.useEffect(() => {
+    const q = searchQuery.trim();
+    if (q.length < 2) {
+      setSuggestions([]);
+      setSuggestionsOpen(false);
+      setHighlightIdx(-1);
+      return;
+    }
+    const t = window.setTimeout(() => {
+      suggestAbortRef.current?.abort();
+      const ctrl = new AbortController();
+      suggestAbortRef.current = ctrl;
+      const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=5&lang=en`;
+      fetch(url, { signal: ctrl.signal })
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`Photon ${r.status}`))))
+        .then((j: { features?: PhotonFeature[] }) => {
+          const feats = (j.features ?? []).filter(
+            (f) =>
+              f.geometry?.coordinates &&
+              f.geometry.coordinates.length >= 2,
+          );
+          setSuggestions(feats);
+          setSuggestionsOpen(feats.length > 0);
+          setHighlightIdx(feats.length > 0 ? 0 : -1);
+        })
+        .catch((err) => {
+          if ((err as Error).name === 'AbortError') return;
+          // Suggestions are best-effort — silent failure keeps the manual
+          // submit path working.
+          console.warn('[atlas suggest] failed', err);
+        });
+    }, 280);
+    return () => window.clearTimeout(t);
+  }, [searchQuery]);
+
+  // Close the dropdown when the user clicks outside the search control.
+  React.useEffect(() => {
+    if (!suggestionsOpen) return;
+    const onDocPointerDown = (ev: PointerEvent) => {
+      const root = searchBoxRef.current;
+      if (root && ev.target instanceof Node && !root.contains(ev.target)) {
+        setSuggestionsOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', onDocPointerDown);
+    return () => document.removeEventListener('pointerdown', onDocPointerDown);
+  }, [suggestionsOpen]);
+
+  const handleSearchKeyDown = React.useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (!suggestionsOpen || suggestions.length === 0) {
+        if (e.key === 'Escape') setSuggestionsOpen(false);
+        return;
+      }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setHighlightIdx((i) => (i + 1) % suggestions.length);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setHighlightIdx((i) =>
+          i <= 0 ? suggestions.length - 1 : i - 1,
+        );
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setSuggestionsOpen(false);
+        setHighlightIdx(-1);
+      }
+      // Enter handled by form onSubmit, which uses the highlighted item.
+    },
+    [suggestionsOpen, suggestions.length],
+  );
+
+  // Wire the SCREENSHOT button: capture the map canvas as a PNG.
+  // Requires `preserveDrawingBuffer: true` on the MapLibre constructor
+  // (added below) — without it, toDataURL on a transient WebGL canvas
+  // returns blank pixels.
+  const handleScreenshot = React.useCallback(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    try {
+      const canvas = map.getCanvas();
+      const url = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+      a.href = url;
+      a.download = `mshi-atlas-${ts}.png`;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setScreenshotSaved(true);
+      window.setTimeout(() => setScreenshotSaved(false), 1500);
+    } catch (err) {
+      console.error('[atlas screenshot] failed', err);
+    }
+  }, []);
 
   React.useEffect(() => {
     if (!containerRef.current) return;
@@ -295,6 +443,12 @@ export function AtlasMap() {
         minZoom: 0.5,
         maxZoom: 8,
         attributionControl: false,
+        // Required so the SCREENSHOT button can read pixels back via
+        // canvas.toDataURL — without it, WebGL clears the framebuffer
+        // after each present and the screenshot comes out blank. The
+        // MapLibre default has preserveDrawingBuffer:false for perf;
+        // we explicitly opt in.
+        canvasContextAttributes: { preserveDrawingBuffer: true },
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -555,6 +709,7 @@ export function AtlasMap() {
 
           {/* Top-right search */}
           <div
+            ref={searchBoxRef}
             data-mshi-atlas-search
             className="pointer-events-auto absolute right-4 top-4 z-20 flex flex-col gap-1 border border-rule bg-paper/95 p-2 backdrop-blur-sm"
             style={{ width: 280 }}
@@ -562,13 +717,30 @@ export function AtlasMap() {
             <form
               onSubmit={handleSearchSubmit}
               className="flex items-center gap-1"
+              role="combobox"
+              aria-expanded={suggestionsOpen}
+              aria-haspopup="listbox"
+              aria-owns="atlas-search-suggestions"
             >
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                onFocus={() => {
+                  if (suggestions.length > 0) setSuggestionsOpen(true);
+                }}
                 placeholder="Search city or country..."
                 disabled={searching}
+                autoComplete="off"
+                spellCheck={false}
+                aria-autocomplete="list"
+                aria-controls="atlas-search-suggestions"
+                aria-activedescendant={
+                  highlightIdx >= 0
+                    ? `atlas-suggestion-${highlightIdx}`
+                    : undefined
+                }
                 className="flex-1 border border-rule bg-paper px-2 py-1 font-mono text-[0.75rem] text-ink placeholder:text-ink-soft focus:border-ink focus:outline-none disabled:opacity-50"
               />
               <button
@@ -580,6 +752,55 @@ export function AtlasMap() {
                 <Search className="h-3.5 w-3.5" />
               </button>
             </form>
+
+            {/* Autocomplete dropdown */}
+            {suggestionsOpen && suggestions.length > 0 ? (
+              <ul
+                id="atlas-search-suggestions"
+                role="listbox"
+                data-mshi-atlas-suggestions
+                className="mt-1 max-h-60 overflow-y-auto border border-rule bg-paper"
+              >
+                {suggestions.map((feat, i) => {
+                  const primary = photonDisplayName(feat, searchQuery);
+                  const secondary = photonSecondaryLabel(feat);
+                  const active = i === highlightIdx;
+                  return (
+                    <li
+                      key={`${primary}-${i}`}
+                      id={`atlas-suggestion-${i}`}
+                      role="option"
+                      aria-selected={active}
+                      data-mshi-atlas-suggestion
+                      onPointerDown={(ev) => {
+                        // Prevent the input from losing focus before we
+                        // process the selection.
+                        ev.preventDefault();
+                        applyFeature(feat, searchQuery);
+                      }}
+                      onMouseEnter={() => setHighlightIdx(i)}
+                      className={`flex cursor-pointer items-baseline justify-between gap-2 px-2 py-1.5 font-mono text-[0.7rem] ${
+                        active
+                          ? 'bg-ink text-paper'
+                          : 'text-ink hover:bg-ink/5'
+                      }`}
+                    >
+                      <span className="truncate">{primary}</span>
+                      {secondary ? (
+                        <span
+                          className={`shrink-0 text-[0.62rem] ${
+                            active ? 'text-paper/70' : 'text-ink-soft'
+                          }`}
+                        >
+                          {secondary}
+                        </span>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
+
             {searchError ? (
               <p
                 data-mshi-atlas-search-error
@@ -671,12 +892,17 @@ export function AtlasMap() {
               </button>
             </div>
             <button
-              className="ml-2 inline-flex items-center gap-1.5 border border-rule px-2.5 py-1.5 font-mono text-[0.65rem] uppercase tracking-meta text-ink-soft hover:border-ink hover:text-ink"
-              disabled
-              title="Screenshot — not yet wired"
+              data-mshi-screenshot
+              onClick={handleScreenshot}
+              title="Download a PNG of the current map view"
+              className={`ml-2 inline-flex items-center gap-1.5 border px-2.5 py-1.5 font-mono text-[0.65rem] uppercase tracking-meta transition-colors ${
+                screenshotSaved
+                  ? 'border-bedrock-good bg-bedrock-good/10 text-bedrock-good'
+                  : 'border-rule text-ink-soft hover:border-ink hover:text-ink'
+              }`}
             >
               <Camera className="h-3 w-3" />
-              Screenshot
+              {screenshotSaved ? 'Saved' : 'Screenshot'}
             </button>
           </div>
 
