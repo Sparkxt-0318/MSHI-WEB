@@ -5,7 +5,7 @@
  */
 export const siteConfig = {
   authorName: 'Siyeong Park',
-  institution: '[Institution]',
+  institution: 'Shanghai American School Puxi Campus',
   orcid: '0009-0001-8848-207X',
   email: 'siyeong0318@gmail.com',
   year: '2025-2026',
