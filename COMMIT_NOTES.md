@@ -1,4 +1,131 @@
-# COMMIT_NOTES — atlas navy scope + city/country search + restore globe space navy
+# COMMIT_NOTES — atlas: real lookup, navy scope, search
+
+---
+
+## Night 3 — atlas_lookup.json + real click handler
+
+**Branches:**
+- `Sparkxt-0318/MSHI` → `claude/atlas-real-lookup` (Phase 1, generates JSON)
+- `Sparkxt-0318/MSHI-WEB` → `claude/atlas-real-clicks` (Phase 2-5, wires JSON in)
+
+### Phases 1 & 2 — `atlas_lookup.json`
+
+Built on `claude/atlas-real-lookup` (MSHI repo), forked from
+`claude/item-1-modis` which has the real F+NPP XGBoost model.
+
+The lookup covers a 0.5° grid over the Asia bbox (25–180°E, −10–80°N).
+Land cells (IGBP-non-water) with all 12 F+NPP features non-NaN are
+included. Each cell carries:
+
+| Field | Source |
+|---|---|
+| `pred_log_rs` | F+NPP XGBoost (`F_NPP_model.json`, 12 features) |
+| `pred_climate_log_rs` | Climate-only XGB re-trained here (8 bioclim features) |
+| `anomaly` | `exp(pred_log_rs - pred_climate_log_rs)` |
+| `shap_top3` | `shap.TreeExplainer` on F+NPP, top-3 by abs SHAP |
+| `biome` | IGBP class from `landcover_igbp_2023.tif` |
+| `koppen` | Derived from bio01/bio12/bio14/bio17 (Trewartha-style) |
+| `nearest_train_km` | Haversine to nearest of 615 Asia training sites |
+| `nearest_us_km` | Haversine to nearest of 274 US validation sites |
+
+**Output: 7.6 MB / 20,678 cells.**
+
+### Sample real data
+
+| Place | Anomaly | Biome | Köppen | Train km | US km |
+|---|---:|---|---|---:|---:|
+| Beijing (39.9°N, 116.4°E) | +34.2% | Croplands | Cwa | 29 | 8,402 |
+| Shanghai (31.2°N, 121.5°E) | −1.2% | Urban and built-up | Cfa | 59 | 8,902 |
+| Tokyo (35.7°N, 139.7°E) | −1.3% | Savannas | Cfa | 32 | 7,387 |
+| Seoul (37.6°N, 126.9°E) | −4.6% | Deciduous broadleaf forests | Cfa | 7 | 8,011 |
+| Mongolia (47.5°N, 105°E) | −4.9% | Grasslands | Dfb | 657 | 8,244 |
+| Indo-Gangetic (28°N, 78°E) | +34.9% | Croplands | Aw | 71 | 10,956 |
+| Mumbai (19°N, 73°E) | +57.3% | Croplands | Am | 555 | 11,683 |
+| Indian Ocean (0°N, 80°E) | (no prediction — open ocean) | — | — | — | — |
+
+Distribution: median anomaly 0.987, p05–p95 (0.517, 1.547) — matches
+the published F+NPP work (most cells near 1.0, fat tails to either side).
+MODIS NPP is rank-1 SHAP feature for 63 % of cells, matching the global
+F+NPP SHAP ranking.
+
+### Phase 3 — wiring in MSHI-WEB
+
+- `src/components/atlas/atlas-lookup.ts` (new): fetches
+  `/data/atlas_lookup.json` once, caches the cells in a `Map<string,
+  AtlasLookupCell>` keyed by `"lat.lon"` (rounded to 0.5° grid), and
+  provides `lookupCellSync(lat, lon)` for O(1) lookup. Falls back to
+  spiral neighbour search up to 4 cells (≈ 220 km) when the snapped
+  cell is a NaN hole (urban MODIS edges, MODIS composite seams).
+- `src/components/atlas/atlas-map.tsx`: removed the
+  `/data/atlas_mock_response.json` stub fetch. New `showDetailAt`
+  loads the lookup once and resolves clicks / pin taps / search
+  results against it. Out-of-Asia (geocoded Paris etc.) still
+  renders the existing "outside training domain" panel. Off-grid
+  Asia clicks (open ocean within bbox) render a new
+  "no prediction available" panel.
+- `src/components/atlas/atlas-detail-panel.tsx`: added the
+  `noPrediction` branch. Replaced the "PLACEHOLDER" footer with a
+  factual provenance line that mentions transfer R², training set
+  size, and feature sources.
+- `src/components/atlas/atlas-mock-types.ts`: added
+  `AtlasLookupCell` / `AtlasLookupFile` types and a `noPrediction?`
+  flag on `AtlasResponse`.
+
+### Phase 4 — gates
+
+| Gate | Result |
+|---|---|
+| `pnpm typecheck` | clean |
+| `pnpm build` | clean (atlas chunk 287 kB unchanged) |
+| `/atlas` loads | yes |
+| `atlas_lookup.json` fetch < 3 s | **1.7 s** ✓ |
+| Shanghai pin: real prediction, IGBP "Urban and built-up", Cfa | ✓ |
+| Beijing pin: real prediction, IGBP "Croplands", Cwa | ✓ |
+| Tokyo search: real prediction, Cfa | ✓ |
+| Paris search: "Outside model training domain" message | ✓ |
+| Open-ocean click (Indian Ocean): "no prediction available" | ✓ |
+| No regression on navy-scope gate | ✓ |
+| No regression on search gate | ✓ |
+
+Verifier: `scripts/verify-atlas-real-lookup.mjs`. Existing
+`verify-atlas-navy-scope.mjs` and `verify-atlas-search.mjs` still pass.
+
+### Phase 5 — provenance in the UI
+
+A one-line model provenance footer is now in the prediction body:
+
+> F+NPP XGBoost · n=615 Asia training sites (SRDB + COSORE) ·
+> Asia → US transfer R² = +0.145 (95% CI 0.026–0.241).
+> Per-cell SHAP via TreeExplainer; biome from MODIS IGBP;
+> Köppen derived from WorldClim bio01/bio12/bio14/bio17.
+
+This is the only user-facing reference; the rest of the panel is
+the data itself.
+
+### Honest caveats
+
+1. **Cell count is 20,678, not the 40-60K the brief expected.** The
+   25–180°E × −10–80°N bbox is mostly ocean (Indian, Pacific west of
+   Japan, Arctic) plus high MODIS-NaN regions at the eastern edge.
+   After IGBP-water mask + feature-NaN drop, 20,678 land cells is
+   the honest count. The grid is still 0.5° everywhere, so click
+   resolution is unchanged. See `data/outputs/atlas_lookup_summary.md`
+   in the MSHI repo.
+2. **Model is modest.** Transfer R² = +0.145 (95 % CI 0.026, 0.241).
+   Individual cell predictions can be noisy. The aggregate
+   distribution and the F-vs-F+NPP comparison are the trustworthy
+   signal.
+3. **Köppen is derived, not raster-sampled.** No Köppen-Geiger
+   raster ships with the repo; the panel's Köppen zone is computed
+   from bio01/bio12/bio14/bio17 using Trewartha-simplified thresholds.
+   Edge cases at the Mumbai Aw/Am boundary or Mongolian Dfb/BSk
+   margin can flip on the rules used.
+4. **Urban centres at 0.5° aggregation.** The cell containing
+   Shanghai or Beijing may sample IGBP at a pixel that's
+   "Urban and built-up" or "Croplands" rather than the surrounding
+   savannas/forests. That's a resolution artefact, not a model
+   bug — the lookup faithfully reports the IGBP class at the cell
+   centre.
 
 ---
 

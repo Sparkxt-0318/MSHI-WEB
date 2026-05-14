@@ -6,6 +6,12 @@ import { Protocol as PMTilesProtocol } from 'pmtiles';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { AtlasDetailPanel } from './atlas-detail-panel';
 import type { AtlasOverlayLayer, AtlasResponse } from './atlas-mock-types';
+import {
+  loadLookup,
+  lookupCellSync,
+  cellToResponse,
+  noPredictionResponse,
+} from './atlas-lookup';
 import { Camera, Search } from 'lucide-react';
 
 // Asia training-domain bounding box for the F+NPP model. Any geocoded
@@ -69,6 +75,9 @@ const OVERLAY_LAYERS: ReadonlyArray<{
 
 const FNPP_SOURCE_ID = 'fnpp-pmtiles';
 const FNPP_LAYER_ID = 'fnpp-pmtiles-layer';
+const TRAINING_SITES_URL = '/data/training_sites.json';
+const TRAINING_SOURCE_ID = 'training-sites-source';
+const TRAINING_LAYER_ID = 'training-sites';
 
 // Eight reference cities within the Asian training domain. We deliberately
 // avoid pinning anywhere outside Asia: the F+NPP model is Asia-trained, so
@@ -142,11 +151,17 @@ export function AtlasMap() {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [searchError, setSearchError] = React.useState<string | null>(null);
   const [searching, setSearching] = React.useState(false);
+  const [lookupReady, setLookupReady] = React.useState(false);
+  const [lookupError, setLookupError] = React.useState<string | null>(null);
+  const [showSites, setShowSites] = React.useState(false);
+  const [siteCount, setSiteCount] = React.useState<number | null>(null);
 
-  // PLACEHOLDER click handler shared by globe clicks, city-pin clicks,
-  // and search results. Every call returns the same mock record with the
-  // supplied coordinate spliced in. Night 3+: look up by 0.5° grid cell
-  // in a real precomputed table.
+  // Click handler shared by globe clicks, city-pin clicks, and search
+  // results. Snaps to the nearest 0.5° cell in /data/atlas_lookup.json
+  // (built by build_atlas_lookup.py in the MSHI repo) and renders the
+  // real F+NPP XGBoost prediction + SHAP + biome + Köppen + distances.
+  // If the snapped cell isn't in the lookup (oceans, lakes, IGBP-water,
+  // or outside Asia), shows a "no prediction" panel.
   const showDetailAt = React.useCallback(
     async (
       lat: number,
@@ -155,25 +170,55 @@ export function AtlasMap() {
       outOfDomain?: boolean,
     ) => {
       try {
-        const r = await fetch('/data/atlas_mock_response.json');
-        const json = (await r.json()) as AtlasResponse;
-        const enriched: AtlasResponse = {
-          ...json,
-          coord: {
-            ...json.coord,
-            lat: +lat.toFixed(3),
-            lon: +lon.toFixed(3),
-          },
-          ...(cityName && { name: cityName }),
-          ...(outOfDomain && { outOfDomain: true }),
-        };
-        setResponse(enriched);
+        const cache = await loadLookup();
+        if (outOfDomain) {
+          // Geocoder returned a non-Asia location: keep the existing
+          // "outside training domain" panel.
+          setResponse({
+            coord: { lat, lon },
+            prediction: {
+              rs_anomaly: 1.0,
+              rs_anomaly_ci_low: 1.0,
+              rs_anomaly_ci_high: 1.0,
+              configuration: cache.model.name,
+            },
+            shap_top3: [],
+            biome: { igbp_class: '—', igbp_code: -1 },
+            koppen: { zone: '—', label: '—' },
+            distance_km: {
+              to_nearest_train_site: -1,
+              to_nearest_us_validation_site: -1,
+            },
+            ...(cityName && { name: cityName }),
+            outOfDomain: true,
+          });
+          return;
+        }
+        const cell = lookupCellSync(cache, lat, lon);
+        if (!cell) {
+          setResponse(noPredictionResponse(lat, lon, cityName));
+          return;
+        }
+        setResponse(cellToResponse(cache, cell, cityName));
       } catch (err) {
-        console.error('Failed to load atlas mock response', err);
+        console.error('[atlas] lookup failed', err);
+        setLookupError(
+          err instanceof Error ? err.message : 'Lookup failed',
+        );
       }
     },
     [],
   );
+
+  // Pre-warm the lookup once on mount so the first click is instant.
+  React.useEffect(() => {
+    loadLookup()
+      .then(() => setLookupReady(true))
+      .catch((err) => {
+        console.error('[atlas] lookup load failed', err);
+        setLookupError(err instanceof Error ? err.message : 'Lookup failed');
+      });
+  }, []);
 
   const handleSearchSubmit = React.useCallback(
     async (e?: React.FormEvent) => {
@@ -259,6 +304,9 @@ export function AtlasMap() {
     }
 
     mapRef.current = map;
+    if (typeof window !== 'undefined') {
+      (window as unknown as { __atlas_map?: maplibregl.Map }).__atlas_map = map;
+    }
 
     // Enable the 3D globe projection only after the style finishes loading.
     // The previous code called setProjection() synchronously after construction;
@@ -344,6 +392,59 @@ export function AtlasMap() {
         },
       });
 
+      // Training-site density overlay. Loaded once and added with
+      // visibility:'none' so it costs nothing until the user toggles it.
+      map.addSource(TRAINING_SOURCE_ID, {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+      map.addLayer({
+        id: TRAINING_LAYER_ID,
+        type: 'circle',
+        source: TRAINING_SOURCE_ID,
+        layout: { visibility: 'none' },
+        paint: {
+          // Slightly larger + higher contrast than the original draft so
+          // dots are legible against both the red and blue ends of the
+          // F+NPP colormap. White core, dark outline, partial opacity.
+          'circle-radius': 4,
+          'circle-color': '#FFFFFF',
+          'circle-stroke-color': '#0E1116',
+          'circle-stroke-width': 1.2,
+          'circle-opacity': 0.95,
+        },
+      });
+      // Fetch the 615 training-site coordinates lazily.
+      fetch(TRAINING_SITES_URL)
+        .then((r) => r.json())
+        .then((j: { n_sites?: number; sites?: Array<{ lon: number; lat: number; source: string }> }) => {
+          const sites = j.sites ?? [];
+          const fc = {
+            type: 'FeatureCollection' as const,
+            features: sites.map((s) => ({
+              type: 'Feature' as const,
+              geometry: {
+                type: 'Point' as const,
+                coordinates: [s.lon, s.lat] as [number, number],
+              },
+              properties: { source: s.source },
+            })),
+          };
+          const src = map.getSource(TRAINING_SOURCE_ID) as
+            | maplibregl.GeoJSONSource
+            | undefined;
+          if (src) {
+            src.setData(fc);
+            console.info('[atlas] training-sites loaded', sites.length);
+          } else {
+            console.warn('[atlas] training-sites source not found');
+          }
+          setSiteCount(j.n_sites ?? sites.length);
+        })
+        .catch((err) => {
+          console.error('[atlas] training-sites fetch failed', err);
+        });
+
       // Drop the 8 Asian reference-city pins. Markers (DOM-based) avoid the
       // glyphs/font dependency a symbol+text-layer would require, and they
       // get free occlusion behind the globe in MapLibre 5's globe projection.
@@ -393,6 +494,35 @@ export function AtlasMap() {
       map.once('load', apply);
     }
   }, [activeOverlay]);
+
+  // Training-site density toggle.
+  //
+  // Notes on the apply pattern: the layer is added inside `map.on('load')`,
+  // which fires after this effect first runs. The naive
+  // `if (isStyleLoaded()) apply() else map.once('load', apply)` pattern we
+  // use elsewhere doesn't work here: `once('load')` captures the closure
+  // with the initial state and never re-fires on subsequent clicks. By
+  // calling `apply()` unconditionally (it no-ops if the layer isn't
+  // present yet) and also attaching to `map.on('load')`, the effect re-
+  // applies the current `showSites` value both at mount-time-after-load
+  // and on every subsequent toggle.
+  React.useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => {
+      if (!map.getLayer(TRAINING_LAYER_ID)) return;
+      map.setLayoutProperty(
+        TRAINING_LAYER_ID,
+        'visibility',
+        showSites ? 'visible' : 'none',
+      );
+    };
+    apply();
+    map.on('load', apply);
+    return () => {
+      map.off('load', apply);
+    };
+  }, [showSites]);
 
   return (
     <div className="relative h-[calc(100vh-5rem)] w-full bg-cream">
@@ -519,11 +649,23 @@ export function AtlasMap() {
               </div>
             </div>
             <div className="border-l border-rule pl-6">
-              <p className="meta-label text-ink-soft">Sites</p>
+              <p className="meta-label text-ink-soft">
+                Sites{siteCount ? ` · n=${siteCount}` : ''}
+              </p>
               <button
-                className="mt-1 border border-rule px-2 py-1 font-mono text-[0.65rem] uppercase tracking-meta text-ink-soft hover:border-ink hover:text-ink"
-                disabled
-                title="Visual toggle, not yet wired"
+                data-mshi-toggle-density
+                aria-pressed={showSites}
+                onClick={() => setShowSites((v) => !v)}
+                className={`mt-1 border px-2 py-1 font-mono text-[0.65rem] uppercase tracking-meta transition-colors ${
+                  showSites
+                    ? 'border-ink bg-ink text-paper'
+                    : 'border-rule bg-paper text-ink-soft hover:border-ink hover:text-ink'
+                }`}
+                title={
+                  showSites
+                    ? 'Hide SRDB + COSORE training-site dots'
+                    : 'Show all 615 SRDB + COSORE training-site locations'
+                }
               >
                 Toggle density
               </button>
