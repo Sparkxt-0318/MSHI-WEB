@@ -26,7 +26,7 @@ export default function PaperPage() {
       <section className="section-band border-b border-rule bg-paper">
         <div className="container-narrow">
           <SectionLabel number="·" label="Paper" />
-          <h1 className="display-title mt-6 max-w-[20ch]">
+          <h1 className="display-title mt-6 max-w-[20ch]" style={{ fontSize: 'clamp(2.2rem, 5.4vw, 4.375rem)' }}>
             {siteConfig.paperTitle}
           </h1>
           <p className="mt-6 font-mono text-[0.8rem] uppercase tracking-meta text-ink-soft">
