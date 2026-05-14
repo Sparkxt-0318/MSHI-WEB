@@ -11,7 +11,7 @@ export const siteConfig = {
   year: '2025-2026',
   scienceRepo: 'https://github.com/Sparkxt-0318/MSHI',
   webRepo: 'https://github.com/Sparkxt-0318/MSHI-WEB',
-  paperTitle: '[Paper title — to be supplied]',
+  paperTitle: 'Real-Time Electrochemical Assessment of Soil Health Through Electrochemically Active Biofilm Formation',
   // Headline numbers from the F+NPP Asia → US transfer experiment.
   // These are the actual published research numbers, not placeholders.
   headline: {
