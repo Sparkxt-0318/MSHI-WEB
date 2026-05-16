@@ -73,23 +73,37 @@ export default function AboutPage() {
           <h2 className="font-serif text-2xl font-bold text-ink">Bio</h2>
           <div className="body-prose mt-4">
             <p>
-              <span className="border border-accent bg-cream px-1.5 py-0.5 font-mono text-[0.65rem] uppercase tracking-meta text-accent">
-                Placeholder bio
-              </span>
-              <span className="ml-2 text-ink-soft">
-                Update in <span className="font-mono text-accent">src/lib/site-config.ts</span>
-                {' '}or directly on this page. The voice should match the
-                discussion-section tone of a research paper: confident,
-                specific, and brief.
-              </span>
+              Siyeong Park is a high school researcher at Shanghai American
+              School Puxi, working at the intersection of electrochemical
+              biosensing and continental-scale machine learning for terrestrial
+              carbon cycling.
             </p>
             <p>
-              {siteConfig.authorName} is a researcher at{' '}
-              {siteConfig.institution}, working at the intersection of
-              electrochemical biosensing and continental-scale machine
-              learning for terrestrial carbon cycling. The MSHI project
-              integrates a centimeter-footprint biosensor with a
-              kilometer-grid ML atlas, both validated on held-out data.
+              His primary research addresses a diagnostic blind spot in soil
+              monitoring: conventional electrical-conductivity sensors cannot
+              distinguish nutrient-rich soil from toxic, saline-stressed soil,
+              leading farmers to misread degraded land as healthy. To resolve
+              this &ldquo;salinity paradox,&rdquo; he engineered a
+              three-electrode bioelectrochemical system that measures microbial
+              vitality directly — using the electrochemically active biofilms
+              formed by <em>Geobacter sulfurreducens</em> to separate the
+              faradaic biological signal from ohmic abiotic noise.
+              Chronoamperometry, cyclic voltammetry, differential pulse
+              voltammetry, and open-circuit potential together resolve a
+              soil&rsquo;s metabolic state, and an ensemble machine-learning
+              model condenses this into a single Microbial Soil Health Index
+              (MSHI) from one hour of measurement.
+            </p>
+            <p>
+              The MSHI-Geo atlas extends this question to continental scale.
+              Trained on 615 Asian soil respiration sites and validated against
+              held-out US data, it tests whether soil microbial activity can be
+              predicted from satellite data alone — and finds that it largely
+              cannot, because the biological drivers of respiration do not
+              transfer across regions. Together the two efforts argue for a
+              three-tier monitoring framework: centimeter-scale biosensors,
+              meter-scale flux chambers, and kilometer-scale satellite models,
+              each covering the others&rsquo; blind spots.
             </p>
           </div>
 
@@ -98,17 +112,15 @@ export default function AboutPage() {
           </h2>
           <div className="body-prose mt-4 text-ink-soft">
             <p>
-              <span className="border border-accent bg-cream px-1.5 py-0.5 font-mono text-[0.65rem] uppercase tracking-meta text-accent">
-                Placeholder
-              </span>
-              <span className="ml-2">
-                The user will list collaborators, advisors, and funding
-                sources here. Bond-Lamberty &amp; Thomson (SRDB),
-                Bond-Lamberty et&nbsp;al. (COSORE), ISRIC (SoilGrids 2.0),
-                WorldClim, and the NASA LP DAAC (MODIS) deserve explicit
-                mention as upstream data providers regardless of personal
-                acknowledgments.
-              </span>
+              This work builds on open scientific datasets. Soil respiration
+              observations come from the Soil Respiration Database (SRDB;
+              Bond-Lamberty &amp; Thomson) and the Continuous Soil Respiration
+              Database (COSORE; Bond-Lamberty et&nbsp;al.). Soil property
+              estimates are drawn from SoilGrids 2.0 (ISRIC). Climate variables
+              are from WorldClim. Satellite-derived net primary productivity and
+              land surface temperature come from NASA MODIS products, distributed
+              through the NASA Land Processes Distributed Active Archive Center
+              (LP&nbsp;DAAC).
             </p>
           </div>
 
