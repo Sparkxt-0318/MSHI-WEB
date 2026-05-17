@@ -66,7 +66,10 @@ export function SiteFooter() {
             </Link>
             .
           </p>
-          <p>© {siteConfig.year} {siteConfig.authorName}</p>
+          <p>
+            © {siteConfig.year} {siteConfig.authorName} ·{' '}
+            {siteConfig.institutionFull}
+          </p>
         </div>
       </div>
     </footer>
