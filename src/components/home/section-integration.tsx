@@ -1,6 +1,6 @@
-import Image from 'next/image';
 import { Reveal } from '@/components/site/reveal';
 import { SectionLabel } from '@/components/site/section-label';
+import { PlaceholderFigure } from '@/components/site/placeholder-figure';
 
 export function SectionIntegration() {
   return (
@@ -18,14 +18,11 @@ export function SectionIntegration() {
 
         <Reveal delayMs={120}>
           <div className="mt-14">
-            <div className="relative aspect-[16/9] w-full">
-              <Image
-                src="/images/methodology_evolution_panel.png"
-                alt="Methodology evolution panel: F → F+NPP → Full+MODIS with transfer R² and CI shifts annotated"
-                fill
-                className="object-contain"
-              />
-            </div>
+            <PlaceholderFigure
+              expectedPath="/public/images/methodology_evolution_panel.png"
+              note="Methodology evolution panel from the published manuscript: F → F+NPP → Full+MODIS, with the corresponding transfer R² and CI shifts annotated."
+              aspect="aspect-[16/9]"
+            />
             <figcaption className="mt-3 text-center text-[0.78rem] italic text-ink-soft">
               The deployable monitoring stack: continental atlas where models
               transfer, biosensors where they don&apos;t, chamber data as
