@@ -41,9 +41,9 @@ export function SectionAtlasTeaser() {
                 Asia → US transfer · best configuration
               </p>
 
-              <p className="mt-5 font-serif text-6xl font-bold leading-none">
-                R²&nbsp;=&nbsp;
-                <span className="text-accent-pale">
+              <p className="mt-5 font-serif font-bold leading-none">
+                <span className="block text-xl text-paper/80">R²&nbsp;=</span>
+                <span className="mt-2 block whitespace-nowrap text-5xl text-accent-pale">
                   +{siteConfig.headline.transferR2.toFixed(3)}
                 </span>
               </p>
