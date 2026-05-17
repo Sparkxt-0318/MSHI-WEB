@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { Reveal } from '@/components/site/reveal';
 import { SectionLabel } from '@/components/site/section-label';
@@ -24,31 +25,13 @@ export function SectionAtlasTeaser() {
       {/* Full-bleed image band */}
       <div className="relative w-full">
         <div className="relative h-[72vh] w-full overflow-hidden border-y border-rule">
-          {/*
-            User to drop the published anomaly composite at this path:
-            /public/images/hero_f_npp_asia.png
-            Until the file exists, the placeholder tile renders below as a
-            <div> background. Once the user supplies the file, replace with
-            <Image src={HERO_IMAGE} ... />
-          */}
-          <div
-            aria-hidden="true"
-            className="placeholder-tile absolute inset-0 h-full w-full"
-            style={{ aspectRatio: 'auto' }}
-          >
-            <div className="space-y-2">
-              <p className="text-[0.7rem] font-bold tracking-[0.18em] text-accent">
-                PLACEHOLDER · USER TO SUPPLY
-              </p>
-              <p className="text-[0.7rem] text-ink-soft normal-case tracking-normal">
-                {HERO_IMAGE}
-              </p>
-              <p className="max-w-md text-[0.7rem] text-ink-soft normal-case tracking-normal">
-                Asia anomaly composite (F+NPP). Copy from sister repo into
-                <span className="ml-1 font-mono">/public/images/</span>.
-              </p>
-            </div>
-          </div>
+          <Image
+            src={HERO_IMAGE}
+            alt="Asia soil respiration anomaly composite — F+NPP configuration, 1 km resolution"
+            fill
+            className="object-cover"
+            priority
+          />
 
           {/* Overlay card on the right */}
           <div className="pointer-events-none absolute inset-0 flex items-center">

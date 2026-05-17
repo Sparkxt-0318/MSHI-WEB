@@ -1,7 +1,7 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { Reveal } from '@/components/site/reveal';
 import { SectionLabel } from '@/components/site/section-label';
-import { PlaceholderFigure } from '@/components/site/placeholder-figure';
 
 export function SectionMechanism() {
   return (
@@ -20,11 +20,14 @@ export function SectionMechanism() {
 
         <Reveal delayMs={120}>
           <div className="mx-auto mt-14 max-w-3xl">
-            <PlaceholderFigure
-              expectedPath="/public/images/shap_comparison.png"
-              note="SHAP feature-importance comparison across F, F+NPP, and Full+MODIS configurations. Shows clay, NPP, and bioclim ranks shifting between training (Asia) and held-out (US) regimes."
-              aspect="aspect-[4/3]"
-            />
+            <div className="relative aspect-[4/3] w-full">
+              <Image
+                src="/images/shap_comparison.png"
+                alt="SHAP feature-importance comparison across F, F+NPP, and Full+MODIS configurations — clay, NPP, and bioclim ranks shifting between Asia training and US held-out regimes"
+                fill
+                className="object-contain"
+              />
+            </div>
             <figcaption className="mt-3 text-center text-[0.78rem] italic text-ink-soft">
               SHAP rank order shifts substantially between Asia and US — the
               feature set the model leans on at training time is not the
