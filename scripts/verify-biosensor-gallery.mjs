@@ -1,0 +1,136 @@
+#!/usr/bin/env node
+// Biosensor gallery verification (Phase 2 / Gate 2).
+//
+// Drives headless Chromium against /biosensor: asserts the card count
+// matches the dataset, opens a Phase II card (expect 3 charts) and a
+// Phase I card (expect 2 charts, no empty slot), and confirms each chart
+// renders a real, varied Recharts line path. Screenshots for the record.
+//
+// Usage: node scripts/verify-biosensor-gallery.mjs [baseUrl]
+
+import { chromium } from 'playwright';
+import { promises as fs } from 'node:fs';
+
+const BASE = process.argv[2] ?? 'http://localhost:3210';
+const OUT = 'test_screenshots';
+
+function fail(msg) {
+  console.error(`FAIL: ${msg}`);
+  process.exitCode = 1;
+}
+function ok(msg) {
+  console.log(`OK: ${msg}`);
+}
+
+// A Recharts line path is "varied" if it has many points and the y
+// coordinates are not all (near) identical. SVG path data (M/L/C/S/Q)
+// is a flat sequence of x,y coordinate pairs regardless of command, so
+// every odd-indexed number is a y. (Recharts type="monotone" emits C.)
+function pathIsVaried(d) {
+  if (!d) return false;
+  const nums = (d.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number);
+  if (nums.length < 40) return false;
+  const ys = nums.filter((_, i) => i % 2 === 1);
+  if (ys.length < 20) return false;
+  return Math.max(...ys) - Math.min(...ys) > 2; // px of vertical spread
+}
+
+const dataset = JSON.parse(
+  await fs.readFile('public/data/biosensor_samples.json', 'utf8'),
+);
+
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
+
+await page.goto(`${BASE}/biosensor`, { waitUntil: 'networkidle' });
+await fs.mkdir(OUT, { recursive: true });
+await page.screenshot({ path: `${OUT}/biosensor_gallery.png`, fullPage: true });
+
+// 1. Card count matches dataset.
+const cards = await page.locator('button[aria-label^="Open detail for"]').count();
+if (cards === dataset.sample_count && cards === dataset.samples.length) {
+  ok(`card count ${cards} matches dataset.sample_count`);
+} else {
+  fail(`card count ${cards} != dataset ${dataset.sample_count}`);
+}
+
+// 2. No "placeholder" text anywhere in the rendered page.
+const bodyText = (await page.locator('body').innerText()).toLowerCase();
+if (!bodyText.includes('placeholder')) ok('no "placeholder" in page text');
+else fail('"placeholder" appears in rendered page');
+
+// 3. Required DPV sentence + paper link.
+if (
+  bodyText.includes('differential pulse voltammetry was also used') &&
+  bodyText.includes('omcz cytochrome redox peak')
+) {
+  ok('DPV explanation sentence present');
+} else {
+  fail('DPV explanation sentence missing');
+}
+const dpvParaPaperLink = await page
+  .locator('p', { hasText: 'Differential pulse voltammetry was also used' })
+  .locator('a[href="/paper"]')
+  .count();
+if (dpvParaPaperLink >= 1) ok('DPV sentence links the word "paper" to /paper');
+else fail('DPV sentence does not link to /paper');
+
+// Helper: open a card by sample name, count chart panels, validate paths.
+async function inspectCard(sample) {
+  const expected = sample.techniques.length;
+  await page.locator(`button[aria-label="Open detail for ${sample.name}"]`).click();
+  const dialog = page.locator('[role="dialog"]');
+  await dialog.waitFor({ state: 'visible' });
+  // Recharts needs a tick to lay out the responsive container.
+  await page.waitForTimeout(700);
+
+  const curves = dialog.locator('path.recharts-line-curve');
+  const nCurves = await curves.count();
+  if (nCurves === expected) {
+    ok(`${sample.id}: ${nCurves} chart(s) for ${expected} technique(s) [${sample.techniques.join(',')}]`);
+  } else {
+    fail(`${sample.id}: ${nCurves} charts, expected ${expected}`);
+  }
+
+  // Technique code labels present (CA/CV/OCP), no DPV.
+  const dialogText = (await dialog.innerText()).toUpperCase();
+  for (const t of sample.techniques) {
+    if (dialogText.includes(t.toUpperCase())) ok(`${sample.id}: ${t.toUpperCase()} label shown`);
+    else fail(`${sample.id}: ${t.toUpperCase()} label missing`);
+  }
+  if (dialogText.includes('DPV')) fail(`${sample.id}: DPV label present (must not be)`);
+  else ok(`${sample.id}: no DPV`);
+
+  // Every curve is real & varied.
+  for (let i = 0; i < nCurves; i++) {
+    const d = await curves.nth(i).getAttribute('d');
+    if (pathIsVaried(d)) ok(`${sample.id}: chart ${i + 1} renders varied real data`);
+    else fail(`${sample.id}: chart ${i + 1} path not varied (d="${(d ?? '').slice(0, 60)}…")`);
+  }
+
+  await page.screenshot({ path: `${OUT}/biosensor_${sample.id}.png` });
+  await page.keyboard.press('Escape');
+  await dialog.waitFor({ state: 'hidden' });
+}
+
+const phase2 = dataset.samples.find((s) => s.techniques.length === 3);
+const phase1 = dataset.samples.find((s) => s.techniques.length === 2);
+if (!phase2 || !phase1) fail('dataset lacks a Phase II (3) or Phase I (2) sample to test');
+if (phase2) await inspectCard(phase2);
+if (phase1) await inspectCard(phase1);
+
+// 4. Home page biosensor section renders a real featured trace.
+await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
+await page.locator('#biosensor').scrollIntoViewIfNeeded();
+await page.waitForTimeout(1200);
+const homeCurves = await page.locator('#biosensor path.recharts-line-curve').count();
+if (homeCurves >= 2) ok(`home section renders ${homeCurves} real trace charts`);
+else fail(`home section has ${homeCurves} charts, expected >= 2`);
+const homeText = (await page.locator('#biosensor').innerText()).toLowerCase();
+if (!homeText.includes('placeholder') && !homeText.includes('mock'))
+  ok('home section free of placeholder/mock');
+else fail('home section still has placeholder/mock language');
+await page.locator('#biosensor').screenshot({ path: `${OUT}/biosensor_home_section.png` });
+
+await browser.close();
+console.log(process.exitCode ? '\n=== GATE 2 VERIFY: FAIL ===' : '\n=== GATE 2 VERIFY: PASS ===');
