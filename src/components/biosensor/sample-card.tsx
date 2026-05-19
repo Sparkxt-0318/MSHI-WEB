@@ -13,6 +13,7 @@ import { ElectrochemTraces } from './electrochem-traces';
 import type {
   BiosensorSample,
   Classification,
+  DpvReference,
   TechniqueKey,
 } from './sample-types';
 import { cn } from '@/lib/utils';
@@ -45,9 +46,10 @@ function interpretScore(s: BiosensorSample): string {
 
 interface SampleCardProps {
   sample: BiosensorSample;
+  dpv?: DpvReference;
 }
 
-export function SampleCard({ sample }: SampleCardProps) {
+export function SampleCard({ sample, dpv }: SampleCardProps) {
   const cls = CLASS_META[sample.classification];
 
   return (
@@ -122,12 +124,15 @@ export function SampleCard({ sample }: SampleCardProps) {
           <div className="md:col-span-8">
             <p className="meta-label">Electrochemistry traces</p>
             <div className="mt-3">
-              <ElectrochemTraces sample={sample} />
+              <ElectrochemTraces sample={sample} dpv={dpv} />
             </div>
             <p className="mt-3 font-mono text-[0.65rem] leading-relaxed text-ink-soft">
-              Raw CHI660E exports, downsampled by even stride for fast load;
-              trace shape preserved. CA omits the initial charging transient
-              (instrument noise). Raw files below are verbatim and complete.
+              CA / CV / OCP are this sample&rsquo;s measured exports,
+              downsampled by even stride (shape preserved); CA omits the
+              initial charging transient (instrument noise). The DPV square
+              is the shared digitized published reference, not this
+              sample&rsquo;s measurement. Raw files below are verbatim and
+              complete.
             </p>
           </div>
 

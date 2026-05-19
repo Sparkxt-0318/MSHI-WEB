@@ -133,7 +133,7 @@ export default function BiosensorPage() {
               </h2>
               <div className="mt-5 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {group.items.map((sample) => (
-                  <SampleCard key={sample.id} sample={sample} />
+                  <SampleCard key={sample.id} sample={sample} dpv={dpv} />
                 ))}
               </div>
             </div>

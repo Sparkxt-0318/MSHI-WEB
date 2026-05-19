@@ -3,7 +3,7 @@ import { ArrowRight } from 'lucide-react';
 import { Reveal } from '@/components/site/reveal';
 import { SectionLabel } from '@/components/site/section-label';
 import { ElectrochemTraces } from '@/components/biosensor/electrochem-traces';
-import { loadBiosensorDataset } from '@/lib/biosensor-data';
+import { loadBiosensorDataset, loadDpvReference } from '@/lib/biosensor-data';
 
 const CLASS_COLOR: Record<string, string> = {
   healthy: 'text-bedrock-good',
@@ -18,8 +18,9 @@ const CLASS_LABEL: Record<string, string> = {
 
 export function SectionBiosensor() {
   const { samples } = loadBiosensorDataset();
+  const dpv = loadDpvReference();
   // Feature the richest validated run: a healthy Phase II sample carries
-  // all three techniques (CA + CV + OCP).
+  // all three techniques (CA + CV + OCP); DPV adds the fourth square.
   const featured =
     samples.find(
       (s) => s.classification === 'healthy' && s.techniques.length === 3,
@@ -67,7 +68,7 @@ export function SectionBiosensor() {
           {/* Center: real trace panel */}
           <Reveal className="md:col-span-5" delayMs={140}>
             <div className="border border-rule bg-paper p-2">
-              <ElectrochemTraces sample={featured} />
+              <ElectrochemTraces sample={featured} dpv={dpv} />
             </div>
             <p className="mt-3 text-[0.78rem] italic text-ink-soft">
               {featured.name} — a validated run from the published dataset.

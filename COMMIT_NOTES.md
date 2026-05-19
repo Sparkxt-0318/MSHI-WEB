@@ -29,6 +29,16 @@ Researcher feedback on the section, addressed in one follow-up commit:
 typecheck + build clean; `verify-biosensor-gallery.mjs` extended with
 DPV / grey-box / CA-trim regression checks — GATE 2 still PASS.
 
+**Round 2.** Per follow-up: the digitized DPV is now a fourth uniform
+square inside every sample detail dialog (and the home featured panel)
+alongside CA/CV/OCP — no stretched/extended OCP. All panels are equal
+size with a reserved header height so charts align even when a name
+wraps; header code↔name spacing widened. The DPV square is tagged
+"· ref" and the dialog note states it is the shared digitized published
+reference, not that sample's measurement (corpus still has no per-sample
+DPV; none fabricated). Phase II → CA·CV·OCP·DPV (2×2); Phase I →
+CA·CV·DPV. Verifier updated; GATE 2 PASS.
+
 ## What shipped
 
 **Phase 0 — verify real data (PASS).** Pulled `biosensor_samples/` from

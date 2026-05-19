@@ -84,22 +84,28 @@ async function inspectCard(sample) {
   // Recharts needs a tick to lay out the responsive container.
   await page.waitForTimeout(700);
 
+  // Real technique charts + one appended digitized DPV reference square.
+  const expectedTotal = expected + 1;
   const curves = dialog.locator('path.recharts-line-curve');
   const nCurves = await curves.count();
-  if (nCurves === expected) {
-    ok(`${sample.id}: ${nCurves} chart(s) for ${expected} technique(s) [${sample.techniques.join(',')}]`);
+  if (nCurves === expectedTotal) {
+    ok(`${sample.id}: ${nCurves} uniform squares ([${sample.techniques.join(',')}] + DPV ref)`);
   } else {
-    fail(`${sample.id}: ${nCurves} charts, expected ${expected}`);
+    fail(`${sample.id}: ${nCurves} charts, expected ${expectedTotal} (${expected} techniques + DPV)`);
   }
 
-  // Technique code labels present (CA/CV/OCP), no DPV.
+  // Technique code labels present (CA/CV/OCP) AND the DPV reference square.
   const dialogText = (await dialog.innerText()).toUpperCase();
   for (const t of sample.techniques) {
     if (dialogText.includes(t.toUpperCase())) ok(`${sample.id}: ${t.toUpperCase()} label shown`);
     else fail(`${sample.id}: ${t.toUpperCase()} label missing`);
   }
-  if (dialogText.includes('DPV')) fail(`${sample.id}: DPV label present (must not be)`);
-  else ok(`${sample.id}: no DPV`);
+  if (dialogText.includes('DPV')) ok(`${sample.id}: DPV reference square present`);
+  else fail(`${sample.id}: DPV reference square missing`);
+  // The DPV square must be tagged a reference, not implied a measurement.
+  if ((await dialog.innerText()).includes('shared digitized published reference'))
+    ok(`${sample.id}: DPV labelled as shared digitized reference`);
+  else fail(`${sample.id}: DPV not clearly marked as reference`);
 
   // Every curve is real & varied.
   for (let i = 0; i < nCurves; i++) {
