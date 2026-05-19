@@ -57,24 +57,24 @@ interface Panel {
 
 function ChartPanel({ panel }: { panel: Panel }) {
   return (
-    <div className="flex h-full flex-col border border-rule bg-paper p-5">
-      <div className="flex min-h-[2.75rem] items-baseline justify-between gap-x-8">
+    <div className="flex h-full min-w-0 flex-col overflow-hidden border border-rule bg-paper p-5">
+      <div className="min-h-[3.25rem]">
         <span
           className="font-mono text-[0.7rem] uppercase tracking-meta"
           style={{ color: panel.color }}
         >
           {panel.code}
-        </span>
-        <span className="font-serif text-[0.85rem] italic text-ink-soft">
-          {panel.name}
           {panel.reference ? (
-            <span className="ml-2 not-italic font-mono text-[0.55rem] uppercase tracking-meta text-ink-soft">
-              · ref
+            <span className="ml-2 text-[0.55rem] text-ink-soft">
+              · digitized ref
             </span>
           ) : null}
         </span>
+        <span className="mt-1 block break-words font-serif text-[0.85rem] italic leading-tight text-ink-soft">
+          {panel.name}
+        </span>
       </div>
-      <div className="mt-4 h-[150px] w-full">
+      <div className="mt-3 h-[170px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={panel.data}
@@ -196,7 +196,12 @@ export function ElectrochemTraces({
   }
 
   return (
-    <div className={cn('grid grid-cols-1 gap-3 sm:grid-cols-2', className)}>
+    <div
+      className={cn(
+        'grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2',
+        className,
+      )}
+    >
       {panels.map((panel) => (
         <ChartPanel key={panel.code} panel={panel} />
       ))}

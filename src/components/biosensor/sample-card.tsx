@@ -101,7 +101,7 @@ export function SampleCard({ sample, dpv }: SampleCardProps) {
         </button>
       </DialogTrigger>
 
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogContent>
         <DialogTitle>
           {sample.name}
           <span
@@ -121,9 +121,9 @@ export function SampleCard({ sample, dpv }: SampleCardProps) {
         </DialogDescription>
 
         <div className="mt-6 grid gap-6 md:grid-cols-12">
-          <div className="md:col-span-8">
+          <div className="min-w-0 md:col-span-8">
             <p className="meta-label">Electrochemistry traces</p>
-            <div className="mt-3">
+            <div className="mt-3 min-w-0">
               <ElectrochemTraces sample={sample} dpv={dpv} />
             </div>
             <p className="mt-3 font-mono text-[0.65rem] leading-relaxed text-ink-soft">

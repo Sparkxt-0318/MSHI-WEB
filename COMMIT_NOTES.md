@@ -39,6 +39,18 @@ reference, not that sample's measurement (corpus still has no per-sample
 DPV; none fabricated). Phase II → CA·CV·OCP·DPV (2×2); Phase I →
 CA·CV·DPV. Verifier updated; GATE 2 PASS.
 
+**Round 3 (visual cleanup).** Panel headers were clipping ("Chronoampe…")
+and bleeding across cells because code↔name shared one line with a wide
+gap. Headers are now stacked (code over full name, `break-words`, reserved
+height) so every label stays inside its panel. Found and fixed a
+pre-existing dialog bug: the `fade-in` keyframe (fill `forwards`,
+animates `transform`) overwrote the `-translate-x/y-1/2` centering, so a
+wide dialog rendered off-centre/off-screen — switched DialogContent to an
+opacity-only entrance and a responsive `w-[92vw] max-w-4xl` with
+`overflow-x-hidden`; verified centered + contained at 1024/1280/1500 px.
+Home section rebalanced (prose + compact score in a 4-col column; the
+2×2 trace box gets a roomy 8-col column). typecheck + build clean; GATE 2 PASS.
+
 ## What shipped
 
 **Phase 0 — verify real data (PASS).** Pulled `biosensor_samples/` from
