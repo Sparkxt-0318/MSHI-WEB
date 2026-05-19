@@ -126,7 +126,8 @@ export function SampleCard({ sample }: SampleCardProps) {
             </div>
             <p className="mt-3 font-mono text-[0.65rem] leading-relaxed text-ink-soft">
               Raw CHI660E exports, downsampled by even stride for fast load;
-              trace shape preserved. Download the verbatim files below.
+              trace shape preserved. CA omits the initial charging transient
+              (instrument noise). Raw files below are verbatim and complete.
             </p>
           </div>
 

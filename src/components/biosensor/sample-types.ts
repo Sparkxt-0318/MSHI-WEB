@@ -47,3 +47,21 @@ export interface BiosensorDataset {
   sample_count: number;
   samples: BiosensorSample[];
 }
+
+/**
+ * A single DPV reference curve hand-digitized from the author's published
+ * CHI660E export (the corpus has no per-sample dpv.txt). Shown once as a
+ * sourced reference, never attributed to a gallery sample.
+ */
+export interface DpvReference {
+  kind: 'reference';
+  digitized: true;
+  source: string;
+  technique: string;
+  omcz_peak_v: number;
+  x: number[];
+  y: number[];
+  xlabel: string;
+  ylabel: string;
+  n_points: number;
+}

@@ -2,6 +2,33 @@
 
 Branch: `claude/biosensor-gallery-CxQED` (both repos). Not merged.
 
+## Feedback round (post-PR #21)
+
+Researcher feedback on the section, addressed in one follow-up commit:
+
+1. **CA initial transient cut.** The near-vertical opening of every CA
+   chart is the capacitive charging spike the researcher disregards as
+   instrument noise. `build_biosensor_data.py` now drops the leading
+   transient (robust 5–95th-pct working-band detection, capped at 10%,
+   CA only) before downsampling, so charts show the working-range
+   biofilm signal. Raw `.txt` downloads remain verbatim and complete.
+2. **Grey box removed.** `electrochem-traces.tsx` no longer uses the
+   `bg-rule`/`gap-px` container (which left a filled empty 4th cell for
+   3-trace samples). Each panel is self-bordered; an odd trailing panel
+   spans both columns. No empty cell, no grey box.
+3. **DPV added — digitized from the author's screenshot.** The corpus
+   still has no `dpv.txt`; per the researcher's chosen option, the
+   author-supplied DPV screenshot (Trial 1) was hand-digitized into
+   `scripts/build_dpv_reference.py` →
+   `public/data/biosensor_dpv_reference.json` and shown ONCE on
+   `/biosensor` as a sourced reference (OmcZ marker at −0.13 V, full
+   provenance caption, paper credit) — explicitly not attributed to any
+   gallery sample. The corpus parser is unchanged: no sample gets a
+   fabricated DPV. The required DPV sentence was reworded to match.
+
+typecheck + build clean; `verify-biosensor-gallery.mjs` extended with
+DPV / grey-box / CA-trim regression checks — GATE 2 still PASS.
+
 ## What shipped
 
 **Phase 0 — verify real data (PASS).** Pulled `biosensor_samples/` from

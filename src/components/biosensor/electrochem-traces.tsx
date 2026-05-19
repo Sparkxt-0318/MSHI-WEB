@@ -45,20 +45,25 @@ export function ElectrochemTraces({
   sample,
   className,
 }: ElectrochemTracesProps) {
+  const count = sample.techniques.length;
   return (
-    <div
-      className={cn(
-        'grid grid-cols-1 gap-px border border-rule bg-rule sm:grid-cols-2',
-        className,
-      )}
-    >
-      {sample.techniques.map((key) => {
+    <div className={cn('grid grid-cols-1 gap-3 sm:grid-cols-2', className)}>
+      {sample.techniques.map((key, idx) => {
         const trace = sample.traces[key];
         if (!trace) return null;
         const meta = TECHNIQUE_META[key];
         const data = trace.x.map((xv, i) => ({ x: xv, y: trace.y[i] }));
+        // An odd trailing panel spans both columns so there is never an
+        // empty grid cell (no grey box) and no lopsided orphan.
+        const spanFull = count % 2 === 1 && idx === count - 1;
         return (
-          <div key={key} className="flex flex-col bg-paper p-4">
+          <div
+            key={key}
+            className={cn(
+              'flex flex-col border border-rule bg-paper p-4',
+              spanFull && 'sm:col-span-2',
+            )}
+          >
             <div className="flex items-baseline justify-between">
               <span
                 className="font-mono text-[0.7rem] uppercase tracking-meta"
