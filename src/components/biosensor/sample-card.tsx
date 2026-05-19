@@ -1,6 +1,7 @@
 'use client';
 
-import * as React from 'react';
+import Link from 'next/link';
+import { Download } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -9,21 +10,46 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { ElectrochemTraces } from './electrochem-traces';
-import type { BiosensorSample } from './sample-types';
-import { MapPin } from 'lucide-react';
+import type {
+  BiosensorSample,
+  Classification,
+  TechniqueKey,
+} from './sample-types';
 import { cn } from '@/lib/utils';
 
-const CLASS_COLORS: Record<BiosensorSample['classification'], string> = {
-  Healthy: 'text-bedrock-good',
-  Unhealthy: 'text-accent',
-  'Saline-stressed': 'text-bedrock-warn',
+const CLASS_META: Record<
+  Classification,
+  { label: string; color: string }
+> = {
+  healthy: { label: 'Healthy', color: 'text-bedrock-good' },
+  unhealthy: { label: 'Unhealthy', color: 'text-accent' },
+  saline: { label: 'Saline-stressed', color: 'text-bedrock-warn' },
 };
+
+const TECH_LABEL: Record<TechniqueKey, string> = {
+  ca: 'Chronoamperometry (CA)',
+  cv: 'Cyclic Voltammetry (CV)',
+  ocp: 'Open-Circuit Potential (OCP)',
+};
+
+function interpretScore(s: BiosensorSample): string {
+  const score = s.mshi_score;
+  if (s.classification === 'healthy') {
+    return `An MSHI score of ${score.toFixed(2)} reflects a sustained electron-transfer current — the electrochemically active biofilm is metabolising strongly, the signature of a healthy microbial community.`;
+  }
+  if (s.classification === 'unhealthy') {
+    return `An MSHI score of ${score.toFixed(2)} indicates suppressed faradaic current: extracellular electron transfer is impaired, consistent with a stressed or metabolically arrested microbial community.`;
+  }
+  return `An MSHI score of ${score.toFixed(2)} captures the saline paradox — high ionic conductivity coexists with collapsed biological current, so the soil reads electrically "active" but is biologically arrested.`;
+}
 
 interface SampleCardProps {
   sample: BiosensorSample;
 }
 
 export function SampleCard({ sample }: SampleCardProps) {
+  const cls = CLASS_META[sample.classification];
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -31,69 +57,77 @@ export function SampleCard({ sample }: SampleCardProps) {
           className="group flex h-full w-full flex-col border border-rule bg-paper p-6 text-left transition-colors hover:border-ink"
           aria-label={`Open detail for ${sample.name}`}
         >
-          {sample.is_placeholder ? (
-            <span className="self-start border border-accent px-1.5 py-0.5 font-mono text-[0.6rem] uppercase tracking-meta text-accent">
-              Placeholder
+          <div className="flex items-center justify-between">
+            <span
+              className={cn(
+                'border px-1.5 py-0.5 font-mono text-[0.6rem] uppercase tracking-meta',
+                cls.color,
+              )}
+              style={{ borderColor: 'currentColor' }}
+            >
+              {cls.label}
             </span>
-          ) : null}
-          <h3 className="mt-3 font-serif text-lg font-bold leading-snug text-ink">
+            <span className="font-mono text-[0.62rem] uppercase tracking-meta text-ink-soft">
+              {sample.phase}
+            </span>
+          </div>
+
+          <h3 className="mt-4 font-serif text-lg font-bold leading-snug text-ink">
             {sample.name}
           </h3>
-          <p className="mt-2 line-clamp-3 text-[0.92rem] text-ink-soft">
-            {sample.blurb}
-          </p>
 
           <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 font-mono text-[0.7rem]">
             <div>
               <dt className="uppercase tracking-meta text-ink-soft">MSHI</dt>
-              <dd className="mt-0.5 font-serif text-2xl font-bold text-ink">
+              <dd className="mt-0.5 font-serif text-3xl font-bold text-ink">
                 {sample.mshi_score.toFixed(2)}
               </dd>
             </div>
             <div>
-              <dt className="uppercase tracking-meta text-ink-soft">Class</dt>
-              <dd
-                className={cn(
-                  'mt-0.5 font-serif text-base font-bold',
-                  CLASS_COLORS[sample.classification],
-                )}
-              >
-                {sample.classification}
+              <dt className="uppercase tracking-meta text-ink-soft">
+                Techniques
+              </dt>
+              <dd className="mt-0.5 font-serif text-base font-bold text-ink">
+                {sample.techniques.map((t) => t.toUpperCase()).join(' · ')}
               </dd>
             </div>
           </dl>
 
-          <div className="mt-5 flex items-center gap-2 font-mono text-[0.7rem] text-ink-soft">
-            <MapPin className="h-3 w-3" />
-            <span>
-              {sample.location.lat.toFixed(2)}°,{' '}
-              {sample.location.lon.toFixed(2)}°
-            </span>
-          </div>
-
           <div className="mt-6 self-start border-b border-ink-soft font-mono text-[0.7rem] uppercase tracking-meta text-ink-soft transition-colors group-hover:border-accent group-hover:text-accent">
-            View detail
+            View traces
           </div>
         </button>
       </DialogTrigger>
 
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogTitle>
           {sample.name}
-          {sample.is_placeholder ? (
-            <span className="ml-3 inline-block border border-accent px-1.5 py-0.5 font-mono text-[0.6rem] uppercase tracking-meta text-accent align-middle">
-              Placeholder
-            </span>
-          ) : null}
+          <span
+            className={cn(
+              'ml-3 inline-block border px-1.5 py-0.5 align-middle font-mono text-[0.6rem] uppercase tracking-meta',
+              cls.color,
+            )}
+            style={{ borderColor: 'currentColor' }}
+          >
+            {cls.label}
+          </span>
         </DialogTitle>
-        <DialogDescription>{sample.blurb}</DialogDescription>
+        <DialogDescription>
+          {sample.techniques.length} validated electrochemistry{' '}
+          {sample.techniques.length === 1 ? 'trace' : 'traces'} from the
+          published MSHI dataset · {sample.phase}, Trial {sample.trial_id}.
+        </DialogDescription>
 
         <div className="mt-6 grid gap-6 md:grid-cols-12">
           <div className="md:col-span-8">
             <p className="meta-label">Electrochemistry traces</p>
-            <div className="mt-3 border border-rule bg-paper p-2">
-              <ElectrochemTraces placeholder={sample.is_placeholder} />
+            <div className="mt-3">
+              <ElectrochemTraces sample={sample} />
             </div>
+            <p className="mt-3 font-mono text-[0.65rem] leading-relaxed text-ink-soft">
+              Raw CHI660E exports, downsampled by even stride for fast load;
+              trace shape preserved. Download the verbatim files below.
+            </p>
           </div>
 
           <div className="md:col-span-4">
@@ -102,15 +136,12 @@ export function SampleCard({ sample }: SampleCardProps) {
               {sample.mshi_score.toFixed(2)}
             </p>
             <p
-              className={cn(
-                'mt-3 font-serif text-lg font-bold',
-                CLASS_COLORS[sample.classification],
-              )}
+              className={cn('mt-2 font-serif text-lg font-bold', cls.color)}
             >
-              {sample.classification}
+              {cls.label}
             </p>
-            <p className="mt-1 font-mono text-[0.7rem] text-ink-soft">
-              Confidence {(sample.classification_confidence * 100).toFixed(0)}%
+            <p className="mt-3 text-[0.85rem] leading-relaxed text-ink">
+              {interpretScore(sample)}
             </p>
 
             <hr className="my-5 border-rule" />
@@ -118,78 +149,47 @@ export function SampleCard({ sample }: SampleCardProps) {
             <p className="meta-label">Sample metadata</p>
             <dl className="mt-3 space-y-2 font-mono text-[0.72rem]">
               <div className="flex gap-2">
-                <dt className="w-24 text-ink-soft">ID</dt>
-                <dd className="text-ink">{sample.metadata.sample_id}</dd>
+                <dt className="w-20 text-ink-soft">ID</dt>
+                <dd className="text-ink">{sample.id}</dd>
               </div>
-              {sample.metadata.collection_date ? (
-                <div className="flex gap-2">
-                  <dt className="w-24 text-ink-soft">Date</dt>
-                  <dd className="text-ink">{sample.metadata.collection_date}</dd>
-                </div>
-              ) : null}
-              {sample.metadata.depth_cm ? (
-                <div className="flex gap-2">
-                  <dt className="w-24 text-ink-soft">Depth (cm)</dt>
-                  <dd className="text-ink">{sample.metadata.depth_cm}</dd>
-                </div>
-              ) : null}
               <div className="flex gap-2">
-                <dt className="w-24 text-ink-soft">Lat / Lon</dt>
-                <dd className="text-ink">
-                  {sample.location.lat.toFixed(3)}°,{' '}
-                  {sample.location.lon.toFixed(3)}°
-                </dd>
+                <dt className="w-20 text-ink-soft">Phase</dt>
+                <dd className="text-ink">{sample.phase}</dd>
               </div>
-              {sample.metadata.notes ? (
-                <p className="pt-2 italic text-ink-soft">
-                  {sample.metadata.notes}
-                </p>
-              ) : null}
+              <div className="flex gap-2">
+                <dt className="w-20 text-ink-soft">Trial</dt>
+                <dd className="text-ink">{sample.trial_id}</dd>
+              </div>
             </dl>
 
             <hr className="my-5 border-rule" />
 
-            <p className="meta-label">On the atlas</p>
-            <div className="mt-2 border border-rule bg-cream/60 p-4">
-              {/* Tiny inline minimap: a simple SVG world rectangle with a pin */}
-              <SiteMinimap
-                lat={sample.location.lat}
-                lon={sample.location.lon}
-              />
-              <p className="mt-2 font-mono text-[0.65rem] text-ink-soft">
-                Approximate location. Click in /atlas for the full
-                interactive map.
-              </p>
-            </div>
+            <p className="meta-label">Raw trace files</p>
+            <ul className="mt-3 space-y-2">
+              {sample.techniques.map((t) => {
+                const href = sample.raw_files[t];
+                if (!href) return null;
+                return (
+                  <li key={t}>
+                    <Link
+                      href={href}
+                      download
+                      className="inline-flex items-center gap-2 font-mono text-[0.72rem] text-accent transition-colors hover:text-ink"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      {TECH_LABEL[t]}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+
+            <p className="mt-5 border-t border-rule pt-4 font-mono text-[0.65rem] leading-relaxed text-ink-soft">
+              Validated result from the published dataset.
+            </p>
           </div>
         </div>
       </DialogContent>
     </Dialog>
-  );
-}
-
-interface SiteMinimapProps {
-  lat: number;
-  lon: number;
-}
-
-function SiteMinimap({ lat, lon }: SiteMinimapProps) {
-  // SVG mini-map: equirectangular projection of the entire globe at low res.
-  // Pin position computed from lat/lon. Background is a flat shape; we don't
-  // try to render real coastlines — that would be misleading at this size.
-  const W = 240;
-  const H = 120;
-  const x = ((lon + 180) / 360) * W;
-  const y = ((90 - lat) / 180) * H;
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
-      <rect x={0} y={0} width={W} height={H} fill="#F0EBE3" />
-      {/* Equator + prime meridian */}
-      <line x1={0} y1={H / 2} x2={W} y2={H / 2} stroke="#C8CCD2" strokeDasharray="2 4" />
-      <line x1={W / 2} y1={0} x2={W / 2} y2={H} stroke="#C8CCD2" strokeDasharray="2 4" />
-      {/* Pin */}
-      <circle cx={x} cy={y} r={6} fill="#A4221A" opacity={0.25} />
-      <circle cx={x} cy={y} r={3} fill="#A4221A" />
-    </svg>
   );
 }
