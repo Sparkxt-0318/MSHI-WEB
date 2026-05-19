@@ -2,6 +2,55 @@
 
 Branch: `claude/biosensor-gallery-CxQED` (both repos). Not merged.
 
+## Feedback round (post-PR #21)
+
+Researcher feedback on the section, addressed in one follow-up commit:
+
+1. **CA initial transient cut.** The near-vertical opening of every CA
+   chart is the capacitive charging spike the researcher disregards as
+   instrument noise. `build_biosensor_data.py` now drops the leading
+   transient (robust 5–95th-pct working-band detection, capped at 10%,
+   CA only) before downsampling, so charts show the working-range
+   biofilm signal. Raw `.txt` downloads remain verbatim and complete.
+2. **Grey box removed.** `electrochem-traces.tsx` no longer uses the
+   `bg-rule`/`gap-px` container (which left a filled empty 4th cell for
+   3-trace samples). Each panel is self-bordered; an odd trailing panel
+   spans both columns. No empty cell, no grey box.
+3. **DPV added — digitized from the author's screenshot.** The corpus
+   still has no `dpv.txt`; per the researcher's chosen option, the
+   author-supplied DPV screenshot (Trial 1) was hand-digitized into
+   `scripts/build_dpv_reference.py` →
+   `public/data/biosensor_dpv_reference.json` and shown ONCE on
+   `/biosensor` as a sourced reference (OmcZ marker at −0.13 V, full
+   provenance caption, paper credit) — explicitly not attributed to any
+   gallery sample. The corpus parser is unchanged: no sample gets a
+   fabricated DPV. The required DPV sentence was reworded to match.
+
+typecheck + build clean; `verify-biosensor-gallery.mjs` extended with
+DPV / grey-box / CA-trim regression checks — GATE 2 still PASS.
+
+**Round 2.** Per follow-up: the digitized DPV is now a fourth uniform
+square inside every sample detail dialog (and the home featured panel)
+alongside CA/CV/OCP — no stretched/extended OCP. All panels are equal
+size with a reserved header height so charts align even when a name
+wraps; header code↔name spacing widened. The DPV square is tagged
+"· ref" and the dialog note states it is the shared digitized published
+reference, not that sample's measurement (corpus still has no per-sample
+DPV; none fabricated). Phase II → CA·CV·OCP·DPV (2×2); Phase I →
+CA·CV·DPV. Verifier updated; GATE 2 PASS.
+
+**Round 3 (visual cleanup).** Panel headers were clipping ("Chronoampe…")
+and bleeding across cells because code↔name shared one line with a wide
+gap. Headers are now stacked (code over full name, `break-words`, reserved
+height) so every label stays inside its panel. Found and fixed a
+pre-existing dialog bug: the `fade-in` keyframe (fill `forwards`,
+animates `transform`) overwrote the `-translate-x/y-1/2` centering, so a
+wide dialog rendered off-centre/off-screen — switched DialogContent to an
+opacity-only entrance and a responsive `w-[92vw] max-w-4xl` with
+`overflow-x-hidden`; verified centered + contained at 1024/1280/1500 px.
+Home section rebalanced (prose + compact score in a 4-col column; the
+2×2 trace box gets a roomy 8-col column). typecheck + build clean; GATE 2 PASS.
+
 ## What shipped
 
 **Phase 0 — verify real data (PASS).** Pulled `biosensor_samples/` from

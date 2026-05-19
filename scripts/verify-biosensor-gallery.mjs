@@ -84,22 +84,28 @@ async function inspectCard(sample) {
   // Recharts needs a tick to lay out the responsive container.
   await page.waitForTimeout(700);
 
+  // Real technique charts + one appended digitized DPV reference square.
+  const expectedTotal = expected + 1;
   const curves = dialog.locator('path.recharts-line-curve');
   const nCurves = await curves.count();
-  if (nCurves === expected) {
-    ok(`${sample.id}: ${nCurves} chart(s) for ${expected} technique(s) [${sample.techniques.join(',')}]`);
+  if (nCurves === expectedTotal) {
+    ok(`${sample.id}: ${nCurves} uniform squares ([${sample.techniques.join(',')}] + DPV ref)`);
   } else {
-    fail(`${sample.id}: ${nCurves} charts, expected ${expected}`);
+    fail(`${sample.id}: ${nCurves} charts, expected ${expectedTotal} (${expected} techniques + DPV)`);
   }
 
-  // Technique code labels present (CA/CV/OCP), no DPV.
+  // Technique code labels present (CA/CV/OCP) AND the DPV reference square.
   const dialogText = (await dialog.innerText()).toUpperCase();
   for (const t of sample.techniques) {
     if (dialogText.includes(t.toUpperCase())) ok(`${sample.id}: ${t.toUpperCase()} label shown`);
     else fail(`${sample.id}: ${t.toUpperCase()} label missing`);
   }
-  if (dialogText.includes('DPV')) fail(`${sample.id}: DPV label present (must not be)`);
-  else ok(`${sample.id}: no DPV`);
+  if (dialogText.includes('DPV')) ok(`${sample.id}: DPV reference square present`);
+  else fail(`${sample.id}: DPV reference square missing`);
+  // The DPV square must be tagged a reference, not implied a measurement.
+  if ((await dialog.innerText()).includes('shared digitized published reference'))
+    ok(`${sample.id}: DPV labelled as shared digitized reference`);
+  else fail(`${sample.id}: DPV not clearly marked as reference`);
 
   // Every curve is real & varied.
   for (let i = 0; i < nCurves; i++) {
@@ -131,6 +137,35 @@ if (!homeText.includes('placeholder') && !homeText.includes('mock'))
   ok('home section free of placeholder/mock');
 else fail('home section still has placeholder/mock language');
 await page.locator('#biosensor').screenshot({ path: `${OUT}/biosensor_home_section.png` });
+
+// 5. DPV reference figure: digitized, sourced, OmcZ marker, NOT a sample.
+await page.goto(`${BASE}/biosensor`, { waitUntil: 'domcontentloaded' });
+await page.waitForTimeout(900);
+const dpvPanel = page
+  .locator('div')
+  .filter({ hasText: /^DPVDifferential Pulse Voltammetry/ })
+  .first();
+const dpvCurves = await dpvPanel.locator('path.recharts-line-curve').count();
+if (dpvCurves === 1) ok('DPV reference figure renders one digitized curve');
+else fail(`DPV reference has ${dpvCurves} curves, expected 1`);
+const pageText = await page.locator('body').innerText();
+if (/Hand-digitized from the author/.test(pageText))
+  ok('DPV figure carries digitized-from-source provenance');
+else fail('DPV provenance caption missing');
+if (await page.locator('text=/OmcZ ~ /').count())
+  ok('DPV figure marks the OmcZ peak');
+else fail('DPV OmcZ marker missing');
+
+// 6. Grey box gone: the old empty-cell used .bg-rule; must be absent.
+const greyBoxes = await page.locator('.bg-rule').count();
+if (greyBoxes === 0) ok('no .bg-rule grey box anywhere on /biosensor');
+else fail(`${greyBoxes} .bg-rule element(s) still present (grey box)`);
+
+// 7. CA initial transient trimmed in the dataset (spiky Phase II sample).
+const p2 = dataset.samples.find((s) => s.id === 'healthy_p2_trial7');
+if (p2 && p2.traces.ca.trimmed_head > 0 && p2.traces.ca.x[0] > 1)
+  ok(`CA transient trimmed (healthy_p2_trial7: dropped ${p2.traces.ca.trimmed_head} head pts, starts t=${p2.traces.ca.x[0]}s)`);
+else fail('CA initial transient not trimmed for healthy_p2_trial7');
 
 await browser.close();
 console.log(process.exitCode ? '\n=== GATE 2 VERIFY: FAIL ===' : '\n=== GATE 2 VERIFY: PASS ===');

@@ -3,8 +3,12 @@ import Link from 'next/link';
 import { ExternalLink } from 'lucide-react';
 import { SectionLabel } from '@/components/site/section-label';
 import { SampleCard } from '@/components/biosensor/sample-card';
+import { DpvReferenceFigure } from '@/components/biosensor/dpv-reference';
 import { SiteFooter } from '@/components/site/site-footer';
-import { loadBiosensorDataset } from '@/lib/biosensor-data';
+import {
+  loadBiosensorDataset,
+  loadDpvReference,
+} from '@/lib/biosensor-data';
 import type { Classification } from '@/components/biosensor/sample-types';
 import { siteConfig } from '@/lib/site-config';
 
@@ -24,6 +28,7 @@ const CLASS_LABEL: Record<Classification, string> = {
 export default function BiosensorPage() {
   const data = loadBiosensorDataset();
   const samples = data.samples;
+  const dpv = loadDpvReference();
 
   const groups = CLASS_ORDER.map((cls) => ({
     cls,
@@ -80,14 +85,27 @@ export default function BiosensorPage() {
 
           <p className="mt-6 max-w-prose text-[0.95rem] leading-relaxed text-ink-soft">
             Differential pulse voltammetry was also used in the study, but it
-            is a peak-measurement technique rather than a continuous
-            time-series trace, so its analysis — including the OmcZ cytochrome
-            redox peak near &minus;0.13&nbsp;V — is presented in the{' '}
+            is a peak-measurement technique and no per-sample DPV trace
+            exists in this corpus, so instead of per-sample charts the single
+            reference below is digitized from the author&rsquo;s published
+            DPV trace — marking the OmcZ cytochrome redox peak near
+            &minus;0.13&nbsp;V — with the full analysis in the{' '}
             <Link href="/paper" className="link-arrow">
               paper
-            </Link>{' '}
-            rather than in this trace gallery.
+            </Link>
+            .
           </p>
+
+          <div className="mt-6 max-w-prose">
+            <DpvReferenceFigure dpv={dpv} />
+            <p className="mt-2 font-mono text-[0.62rem] leading-relaxed text-ink-soft">
+              {dpv.source} Not a gallery-sample measurement. See the{' '}
+              <Link href="/paper" className="link-arrow">
+                paper
+              </Link>{' '}
+              for the full DPV analysis.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -115,7 +133,7 @@ export default function BiosensorPage() {
               </h2>
               <div className="mt-5 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {group.items.map((sample) => (
-                  <SampleCard key={sample.id} sample={sample} />
+                  <SampleCard key={sample.id} sample={sample} dpv={dpv} />
                 ))}
               </div>
             </div>

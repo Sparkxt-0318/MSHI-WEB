@@ -48,7 +48,55 @@ def axis_label(token: str) -> str:
     return f"{quantity.strip()} ({unit})"
 
 
-def parse_trace(path: str) -> dict | None:
+def _percentile(sorted_vals: list[float], q: float) -> float:
+    if not sorted_vals:
+        return 0.0
+    idx = q * (len(sorted_vals) - 1)
+    lo = int(math.floor(idx))
+    hi = int(math.ceil(idx))
+    if lo == hi:
+        return sorted_vals[lo]
+    return sorted_vals[lo] + (sorted_vals[hi] - sorted_vals[lo]) * (idx - lo)
+
+
+def trim_leading_transient(xs: list[float], ys: list[float]) -> int:
+    """CA only: drop the near-vertical initial charging transient.
+
+    The opening seconds–minutes of a CHI660E amperometric run are a
+    capacitive charging spike the researcher disregards (instrument
+    noise, not biofilm signal). Because the x-axis spans the whole
+    multi-hour run, that spike renders as a near-vertical line unless
+    the entire transient is removed — trimming only the steepest few
+    points is not enough.
+
+    We define the post-transient working band from the robust 5–95th
+    percentile range of the trace's trailing 90%, then drop leading
+    points while the current sits outside that band (the overshoot),
+    stopping at the first point that has settled into the working
+    range. Capped at 10% of the trace as a safety bound; raw files on
+    disk are untouched and stay fully downloadable.
+    """
+    n = len(ys)
+    if n < 50:
+        return 0
+    tail = sorted(ys[n // 10:])
+    if not tail:
+        return 0
+    p_lo = _percentile(tail, 0.05)
+    p_hi = _percentile(tail, 0.95)
+    span = p_hi - p_lo
+    if span <= 0:
+        span = abs(p_hi) or 1.0
+    lo = p_lo - 0.05 * span
+    hi = p_hi + 0.05 * span
+    cap = max(1, n // 10)
+    i = 0
+    while i < cap and (ys[i] > hi or ys[i] < lo):
+        i += 1
+    return i
+
+
+def parse_trace(path: str, technique: str) -> dict | None:
     """Strip the CHI660E header, read the two-column data, label axes from
     the column header. Returns None if no real two-column data is found."""
     xs: list[float] = []
@@ -80,8 +128,15 @@ def parse_trace(path: str) -> dict | None:
     if not in_data or len(xs) < 2 or len(xs) != len(ys):
         return None
     n_raw = len(xs)
-    if n_raw > MAX_POINTS:
-        stride = math.ceil(n_raw / MAX_POINTS)
+    trimmed_head = 0
+    if technique == "ca":
+        trimmed_head = trim_leading_transient(xs, ys)
+        if trimmed_head:
+            xs = xs[trimmed_head:]
+            ys = ys[trimmed_head:]
+    n_kept = len(xs)
+    if n_kept > MAX_POINTS:
+        stride = math.ceil(n_kept / MAX_POINTS)
         xs = xs[::stride]
         ys = ys[::stride]
     return {
@@ -89,6 +144,7 @@ def parse_trace(path: str) -> dict | None:
         "y": [float(f"{v:.6g}") for v in ys],
         "xlabel": xlabel,
         "ylabel": ylabel,
+        "trimmed_head": trimmed_head,
         "n_raw": n_raw,
         "n_plotted": len(xs),
     }
@@ -137,7 +193,7 @@ def main() -> int:
             tpath = os.path.join(fdir, f"{tech}.txt")
             if not os.path.exists(tpath) or os.path.getsize(tpath) <= 1024:
                 continue
-            parsed = parse_trace(tpath)
+            parsed = parse_trace(tpath, tech)
             if parsed is None:
                 continue
             traces[tech] = parsed
