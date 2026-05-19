@@ -1,159 +1,98 @@
-# Blockers and design decisions
+# BLOCKERS — biosensor gallery + reproducible notebook
 
-A brief log of things this scaffolding run could not finish, and design
-decisions made unilaterally where the brief left a defensible choice
-to the implementer.
-
-## Hard blockers
-
-None. The site builds, the routes render, and every requested feature
-has scaffolding plus a clearly-labeled placeholder where user input is
-needed.
-
-## Soft blockers (need user input to become "real")
-
-1. **Mapbox public access token.** The `/atlas` page renders a
-   deliberate "setup required" panel until `NEXT_PUBLIC_MAPBOX_TOKEN`
-   is set. Cannot be filled in autonomously since it is account-bound.
-2. **Image assets.** Four PNGs and one PDF must be supplied by the
-   user — see `SUMMARY_FOR_USER.md` §"What needs your input".
-3. **Biosensor sample data.** The gallery ships three explicit
-   placeholders. Real `BiosensorSample` records (and the four
-   electrochemistry CSVs per sample) must come from the published
-   dataset.
-
-## Design decisions made by the implementer
-
-These were calls the brief explicitly invited ("make a defensible
-choice and note it"). Each is reversible.
-
-### Branch name
-
-Brief asked for `claude/scaffold`; the harness pinned the working
-branch to `claude/build-mshi-website-mxv1R`. Worked on the harness-
-specified branch. Rename instructions are in `SUMMARY_FOR_USER.md`.
-
-### Mapbox basemap
-
-Default style is `mapbox://styles/mapbox/light-v11`. Quiet, off-white
-land, no road labels. Closest stock match to the Bedrock palette
-without authoring a custom Studio style. Override via
-`NEXT_PUBLIC_MAPBOX_STYLE`.
-
-### Atlas overlay coordinate bounds
-
-Hard-coded the F+NPP raster bounds to `[60°E–150°E, 0°N–60°N]`. This
-is a reasonable Asian study-domain rectangle but may not match the
-exact extent of your published raster. Edit
-`src/components/atlas/atlas-map.tsx:62-67` if needed.
-
-### Carbon flux comparison numbers
-
-Section 01 ships actual published global means: fossil fuels ~10,
-soil Rs ~91, GPP ~120 (Pg C yr⁻¹). Citation footnote attributes them
-to Friedlingstein 2022, Beer 2010, and Bond-Lamberty & Thomson 2018
-respectively. These are not invented; they are well-known values.
-If you'd rather cite different sources, edit `carbon-flux-chart.tsx`.
-
-### Electrochemistry trace shapes
-
-Generated deterministically from physics-motivated functions
-(Cottrell-like decay for CA, sinusoidal sweep with Gaussian peaks
-for CV, log drift for OCP, single Gaussian for DPV). They look like
-real electrochemistry but are computed, not measured. Each panel
-where they appear carries a "Placeholder · example data" badge so the
-viewer cannot confuse them with real samples.
-
-### Three placeholder samples vs. six
-
-Shipped three. Brief allowed 3–6. Three was enough to demonstrate
-all three classifier outputs (Healthy, Unhealthy, Saline-stressed)
-and to fill a `lg:grid-cols-3` row cleanly. Add more by appending
-to `PLACEHOLDER_SAMPLES`.
-
-### Methods page voice
-
-Wrote the methods page in the voice of a research paper's methods
-section. Tightened the brief's bullet outline into prose with
-embedded callouts for the headline numbers. No new numerical
-results were invented. Speculative claims (e.g., the line about
-XGBoost dominating "at every sample size we tried") are hedged
-and explicitly flagged in `SUMMARY_FOR_USER.md` as invitations to
-edit.
-
-### Footer BibTeX
-
-Placeholder BibTeX uses `{${siteConfig.year}}` interpolation so
-that updating the year in `src/lib/site-config.ts` propagates to
-the citation. Title, author, journal stay as `[placeholders]`
-until you fill them in.
-
-### "Research portfolio" branding
-
-The site nav reads `MSHI · research portfolio`. Brief was explicit
-about not signaling SaaS / startup. The wordmark uses the project's
-acronym only; institutional affiliation lives in the hero band and
-footer where it can be edited in one place via `site-config.ts`.
-
-### What I deliberately did not build
-
-- No analytics, sitemap, robots.txt, or social OG images.
-- No "Get Started" / "Sign Up" / "Pricing" / "Trusted by" patterns.
-- No emoji in headers or section labels.
-- No autoplay, parallax, or hero carousels.
-- No drop shadows on cards beyond the one on the atlas-teaser
-  overlay card and the modal dialog (per the brief's "use sparingly,
-  low-opacity" guidance).
-- No stock photos.
-- No backwards-compatibility shims or unused exports.
+Log of what this task could not finish and the defensible decisions made
+where reality diverged from the brief. No sample, trace, model, or
+notebook was fabricated to paper over any blocker.
 
 ---
 
-## 2026-05 update — atlas navy-scope gate, partial
+## HARD BLOCK — Phase 3: reproducible Colab notebook (NOT SHIPPED)
 
-Branch: `claude/atlas-navy-scope-and-search`.
+**Status: halted by the brief's own Phase 3 HALT rule. Phases 1–2 shipped.**
 
-Gate 1 sub-checks (Fix 1):
-1. (50px from top edge, center) cream → **PASS** (~248,244,238)
-2. (50px from left edge, vertical center) cream → **PASS** (~248,244,238)
-3. Just outside the sphere edge → navy (B > R, B > G) → **FAIL** (still cream)
+Phase 3 requires the *biosensor* MSHI model artifacts — the XGBoost +
+1D-CNN ensemble and scalers that map electrochemistry traces to an MSHI
+score and a healthy/unhealthy/saline classification — at a public
+location so a Colab can load them from raw GitHub URLs.
 
-### What I did
+These artifacts are **not public anywhere**. Verified exhaustively:
 
-- Removed `background: SPACE_GRADIENT` from the map-container inline
-  style — this was the source of the "entire viewport navy rectangle"
-  the user complained about. Container now `background: 'transparent'`.
-- Added `map.setSky({ ... })` inside the `style.load` callback with
-  navy `sky-color` / `horizon-color` / `fog-color` and
-  `atmosphere-blend: 1.0`. Tried both moderate (0.5–0.6) and maximal
-  (1.0) blend values for `sky-horizon-blend` / `horizon-fog-blend` /
-  `fog-ground-blend`.
+- `Sparkxt-0318/MSHI@main` tracks only two model files, both under
+  `data/outputs/`: `F_NPP_model.json` and `Full_MODIS_model.json`.
+  These are the **MSHI-Geo atlas** XGBoost models. They predict a soil
+  **respiration anomaly from climate/satellite features** at continental
+  scale. They take gridded environmental features as input and cannot
+  accept electrochemistry `.txt` files, nor do they emit an MSHI
+  score/classification. Wrong model entirely.
+- There is **no 1D-CNN** in the repo. `requirements.txt` pins
+  `xgboost`/`scikit-learn` for the geo pipeline and lists **no deep
+  learning framework at all** (no tensorflow / torch / keras). No
+  `conv1d`, no `.h5`/`.pt`, no electrochemistry scaler, and no code that
+  turns a CA/CV/OCP trace into an MSHI score exists in either repo.
+- The MSHI README explicitly frames MSHI-Geo as the *"geospatial twin of
+  the **published** electrochemical MSHI biosensor."* The biosensor
+  model is prior published work; its artifacts were never committed to
+  the open repository. `CLAUDE_CODE_PROMPT.md` confirms the author keeps
+  exported artifacts on a personal Google Drive.
 
-### Why criterion 3 still fails
+Per the brief: *"If the model artifacts are NOT at a public location
+(still only on personal Google Drive), HALT Phase 3 only, document in
+BLOCKERS.md, and ship Phases 1–2. Do not block the gallery on this."*
 
-MapLibre 5.24's globe-projection atmosphere is too subtle to register
-in a headless screenshot at zoom 2.0. A 9×9 sweep of the canvas shows
-the F+NPP raster on the sphere, but every cell outside the sphere
-returns the page cream. The atmosphere/halo simply doesn't paint
-visibly outside the sphere geometry at this zoom.
+**Action taken:** No notebook was created (a notebook that cannot load a
+real model and cannot score real input would be a fabrication). The
+`/biosensor` page does **not** link to a non-existent Colab; instead it
+carries an honest note that the reproducible notebook is pending public
+release of the model artifacts, and links to the paper and the MSHI
+code repository. GATE 3 is therefore not applicable — Phase 3 is halted
+by design, not failed.
 
-### Options to actually produce a navy halo
+**To unblock:** publish the biosensor classifier (XGBoost model, 1D-CNN
+weights, feature scalers, and the trace→feature preprocessing) to a
+public path in `Sparkxt-0318/MSHI`. Then the notebook can be authored to
+load them via `raw.githubusercontent.com` with a bundled worked example.
 
-1. Re-introduce a *scoped* CSS radial gradient on the wrapper — e.g.
-   `radial-gradient(circle 380px at 50% 50%, #0a1628 0%, #0a1628 55%,
-   transparent 100%), #FAF8F5`. This paints navy in a circle centered
-   on the sphere and fades to cream at the edges. The task brief
-   explicitly forbids CSS on wrappers, so I have not done this.
-2. A custom MapLibre WebGL layer that draws a halo around the sphere
-   geometry. Significant scope, not a minor fix.
-3. Upgrade MapLibre past 5.24 if a later release renders the globe
-   atmosphere more aggressively.
+---
 
-### Recommendation
+## DATA EXCLUSION — `saline_p2_trial1` (1 of 6 folders dropped)
 
-The primary complaint ("navy fills the entire map rectangle") is
-fixed. The remaining "navy halo around sphere" criterion needs a
-deviation from the strict "no CSS on wrapper" rule, or a different
-implementation altogether. I'd want explicit user confirmation
-before re-adding a scoped CSS gradient, given the prior attempt was
-the cause of this ticket.
+`biosensor_samples/saline_p2_trial1/` contains a valid `metadata.json`
+(Phase II, score 0.893, class `saline`) and a real `ca.txt` (3.3 MB),
+but **no `cv.txt` and no `ocp.txt`**. It fails the Phase 0 hard gate
+("each sample has at minimum ca.txt and cv.txt; Phase II also ocp.txt").
+
+Per the brief's absolute rule against fabricating traces, this sample is
+**excluded**, not patched. Consequence: the gallery has no `saline`
+class card (the only saline folder is the incomplete one). Healthy (3)
+and Unhealthy (2) classes are fully represented. 5 valid samples ≥ 3, so
+the Phase 0 global HALT did not trigger and Phases 1–2 shipped.
+
+**To unblock:** add real `cv.txt` (and `ocp.txt`, Phase II) to
+`saline_p2_trial1/` upstream and re-run `scripts/build_biosensor_data.py`.
+
+---
+
+## NOTE — upstream README lists DPV; corpus has none (handled correctly)
+
+`MSHI/biosensor_samples/README.md` instructs that Phase II folders
+should include `dpv.txt`. The uploaded corpus contains **zero DPV
+files** (confirmed across all 6 folders). This matches the brief, which
+states there are no DPV traces and forbids inventing one. The gallery
+parses and renders only the techniques that physically exist
+(CA/CV/OCP) and the page carries the required one-sentence explanation
+of why DPV is presented in the paper rather than charted here. No DPV
+trace was generated, mocked, or placeholdered. Not a blocker — recorded
+so the README/corpus discrepancy is not mistaken for missing work.
+
+---
+
+## DECISION — branch name
+
+The free-text brief said branch `claude/biosensor-gallery` from `main`.
+The harness designated `claude/biosensor-gallery-CxQED` as the required
+development branch for both repos and forbids pushing elsewhere without
+explicit permission. Resolved in favour of the harness-designated
+branch: **`claude/biosensor-gallery-CxQED`** (same intent, suffixed).
+Note: `MSHI-WEB` has no `main` branch; its default is
+`claude/build-mshi-website-mxv1R`, and the feature branch was cut from
+the latest merged site state (PR #20), which is the correct base.
