@@ -12,7 +12,7 @@ import {
   cellToResponse,
   noPredictionResponse,
 } from './atlas-lookup';
-import { Camera, Info, Search, X } from 'lucide-react';
+import { Camera, Eye, EyeOff, Info, Search, X } from 'lucide-react';
 
 // Asia training-domain bounding box for the F+NPP model. Any geocoded
 // search result that falls outside this rectangle is flagged
@@ -200,6 +200,9 @@ export function AtlasMap() {
   const [lookupError, setLookupError] = React.useState<string | null>(null);
   const [showSites, setShowSites] = React.useState(false);
   const [siteCount, setSiteCount] = React.useState<number | null>(null);
+  // Collapses the bottom legend/controls bar so the globe can be explored
+  // — and screenshotted — without UI chrome; a bottom-left pill restores it.
+  const [barVisible, setBarVisible] = React.useState(true);
 
   // Click handler shared by globe clicks, city-pin clicks, and search
   // results. Snaps to the nearest 0.5° cell in /data/atlas_lookup.json
@@ -879,78 +882,104 @@ export function AtlasMap() {
             </p>
           </div>
 
-          {/* Bottom strip: legend + actions */}
-          <div className="pointer-events-auto absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-6 border border-rule bg-paper/95 px-5 py-3 backdrop-blur-sm">
-            <div>
-              <p className="meta-label flex items-center gap-1 text-ink-soft">
-                Rs anomaly · {activeOverlay} ·{' '}
-                {modelMeta
-                  ? `n=${activeOverlay === 'Full+MODIS' ? modelMeta.fullmodis.n : modelMeta.fnpp.n}`
-                  : '—'}
+          {/* Bottom strip: legend + actions. Collapsible — hiding it gives a
+              clean, chrome-free globe for exploration and screenshots; a
+              bottom-left pill brings it back. */}
+          {barVisible ? (
+            <div className="pointer-events-auto absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-6 border border-rule bg-paper/95 px-5 py-3 backdrop-blur-sm">
+              <div>
+                <p className="meta-label flex items-center gap-1 text-ink-soft">
+                  Rs anomaly · {activeOverlay} ·{' '}
+                  {modelMeta
+                    ? `n=${activeOverlay === 'Full+MODIS' ? modelMeta.fullmodis.n : modelMeta.fnpp.n}`
+                    : '—'}
+                  <button
+                    data-mshi-anomaly-info
+                    type="button"
+                    onClick={() => setInfoOpen(true)}
+                    aria-label="What does this anomaly mean?"
+                    className="ml-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border border-rule text-ink-soft hover:border-ink hover:text-ink"
+                  >
+                    <Info className="h-2.5 w-2.5" />
+                  </button>
+                </p>
+                <div className="mt-1 flex items-center gap-2">
+                  <div
+                    aria-hidden="true"
+                    className="h-2 w-44"
+                    style={{
+                      // Hero-aligned inverted colormap: red = suppressed (low),
+                      // blue = elevated (high). Left-to-right = 0.5 -> 1.5.
+                      background:
+                        'linear-gradient(to right, #A4221A 0%, #F4C2A8 25%, #FAF8F5 50%, #3F7CAB 75%, #1F4068 100%)',
+                    }}
+                  />
+                </div>
+                <div className="mt-1 flex justify-between font-mono text-[0.6rem] text-ink-soft">
+                  <span>0.5 · suppressed</span>
+                  <span>1.0</span>
+                  <span>1.5 · elevated</span>
+                </div>
+              </div>
+              <div className="border-l border-rule pl-6">
+                <p className="meta-label text-ink-soft">
+                  Sites{siteCount ? ` · n=${siteCount}` : ''}
+                </p>
                 <button
-                  data-mshi-anomaly-info
-                  type="button"
-                  onClick={() => setInfoOpen(true)}
-                  aria-label="What does this anomaly mean?"
-                  className="ml-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border border-rule text-ink-soft hover:border-ink hover:text-ink"
+                  data-mshi-toggle-density
+                  aria-pressed={showSites}
+                  onClick={() => setShowSites((v) => !v)}
+                  className={`mt-1 border px-2 py-1 font-mono text-[0.65rem] uppercase tracking-meta transition-colors ${
+                    showSites
+                      ? 'border-ink bg-ink text-paper'
+                      : 'border-rule bg-paper text-ink-soft hover:border-ink hover:text-ink'
+                  }`}
+                  title={
+                    showSites
+                      ? 'Hide SRDB + COSORE training-site dots'
+                      : 'Show all 615 SRDB + COSORE training-site locations'
+                  }
                 >
-                  <Info className="h-2.5 w-2.5" />
+                  Toggle density
                 </button>
-              </p>
-              <div className="mt-1 flex items-center gap-2">
-                <div
-                  aria-hidden="true"
-                  className="h-2 w-44"
-                  style={{
-                    // Hero-aligned inverted colormap: red = suppressed (low),
-                    // blue = elevated (high). Left-to-right = 0.5 -> 1.5.
-                    background:
-                      'linear-gradient(to right, #A4221A 0%, #F4C2A8 25%, #FAF8F5 50%, #3F7CAB 75%, #1F4068 100%)',
-                  }}
-                />
               </div>
-              <div className="mt-1 flex justify-between font-mono text-[0.6rem] text-ink-soft">
-                <span>0.5 · suppressed</span>
-                <span>1.0</span>
-                <span>1.5 · elevated</span>
-              </div>
-            </div>
-            <div className="border-l border-rule pl-6">
-              <p className="meta-label text-ink-soft">
-                Sites{siteCount ? ` · n=${siteCount}` : ''}
-              </p>
               <button
-                data-mshi-toggle-density
-                aria-pressed={showSites}
-                onClick={() => setShowSites((v) => !v)}
-                className={`mt-1 border px-2 py-1 font-mono text-[0.65rem] uppercase tracking-meta transition-colors ${
-                  showSites
-                    ? 'border-ink bg-ink text-paper'
-                    : 'border-rule bg-paper text-ink-soft hover:border-ink hover:text-ink'
+                data-mshi-screenshot
+                onClick={handleScreenshot}
+                title="Download a PNG of the current map view"
+                className={`ml-2 inline-flex items-center gap-1.5 border px-2.5 py-1.5 font-mono text-[0.65rem] uppercase tracking-meta transition-colors ${
+                  screenshotSaved
+                    ? 'border-bedrock-good bg-bedrock-good/10 text-bedrock-good'
+                    : 'border-rule text-ink-soft hover:border-ink hover:text-ink'
                 }`}
-                title={
-                  showSites
-                    ? 'Hide SRDB + COSORE training-site dots'
-                    : 'Show all 615 SRDB + COSORE training-site locations'
-                }
               >
-                Toggle density
+                <Camera className="h-3 w-3" />
+                {screenshotSaved ? 'Saved' : 'Screenshot'}
+              </button>
+              <button
+                data-mshi-hide-bar
+                type="button"
+                onClick={() => setBarVisible(false)}
+                aria-label="Hide legend bar"
+                title="Hide this bar for a clean, distraction-free view"
+                className="ml-1 flex items-center self-stretch border-l border-rule pl-3 text-ink-soft transition-colors hover:text-ink"
+              >
+                <EyeOff className="h-4 w-4" />
               </button>
             </div>
+          ) : (
             <button
-              data-mshi-screenshot
-              onClick={handleScreenshot}
-              title="Download a PNG of the current map view"
-              className={`ml-2 inline-flex items-center gap-1.5 border px-2.5 py-1.5 font-mono text-[0.65rem] uppercase tracking-meta transition-colors ${
-                screenshotSaved
-                  ? 'border-bedrock-good bg-bedrock-good/10 text-bedrock-good'
-                  : 'border-rule text-ink-soft hover:border-ink hover:text-ink'
-              }`}
+              data-mshi-show-bar
+              type="button"
+              onClick={() => setBarVisible(true)}
+              aria-label="Show legend bar"
+              title="Show the Rs-anomaly legend & controls"
+              className="pointer-events-auto absolute bottom-4 left-4 z-20 inline-flex animate-fade-in items-center gap-1.5 border border-rule bg-paper/95 px-3 py-2 font-mono text-[0.65rem] uppercase tracking-meta text-ink-soft backdrop-blur-sm transition-colors hover:border-ink hover:text-ink"
             >
-              <Camera className="h-3 w-3" />
-              {screenshotSaved ? 'Saved' : 'Screenshot'}
+              <Eye className="h-3.5 w-3.5" />
+              Show legend
             </button>
-          </div>
+          )}
 
           <AtlasDetailPanel
             response={response}
