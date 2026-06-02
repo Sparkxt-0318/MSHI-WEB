@@ -28,6 +28,9 @@ export interface AtlasResponse {
   name?: string;
   outOfDomain?: boolean;
   noPrediction?: boolean;
+  /** "training" = Asia (validated domain); "transfer" = non-Asia cell, a
+   *  cross-continental extrapolation that the detail panel must flag. */
+  domain?: 'training' | 'transfer';
   _schema_version?: string;
   _note?: string;
 }
@@ -41,7 +44,10 @@ export interface AtlasModelBlock {
   features?: Record<string, number>;
 }
 
-/** Raw cell shape inside atlas_lookup.json["cells"] for schema v3. */
+/** Raw cell shape inside atlas_lookup.json["cells"].
+ *  Schema v4 adds `domain` ("training" for Asia cells, "transfer" for the
+ *  non-Asia cells where real MODIS exists). v3 files (no `domain`) load fine —
+ *  cells are then treated as training. */
 export interface AtlasLookupCell {
   lat: number;
   lon: number;
@@ -53,6 +59,7 @@ export interface AtlasLookupCell {
   koppen: string;
   nearest_train_km: number;
   nearest_us_km: number;
+  domain?: 'training' | 'transfer';
 }
 
 /** Per-model metadata at the file root (v3 schema). */
@@ -82,6 +89,13 @@ export interface AtlasLookupFile {
   models: {
     fnpp: AtlasModelMeta;
     fullmodis: AtlasModelMeta;
+  };
+  /** v4: describes the training (Asia) vs transfer (rest-of-globe) split and
+   *  the MODIS-coverage limitation. Absent in v3 files. */
+  coverage?: {
+    training_region?: { name: string; bbox: number[]; n_cells: number };
+    transfer_region?: { name: string; n_cells: number };
+    note?: string;
   };
   cells: AtlasLookupCell[];
 }
