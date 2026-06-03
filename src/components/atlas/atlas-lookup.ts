@@ -1,10 +1,13 @@
 // Atlas lookup loader + per-cell adapter.
 //
-// /public/data/atlas_lookup.json (schema v3) is fetched on first use,
+// /public/data/atlas_lookup.json (schema v4) is fetched on first use,
 // cached at module scope, and queried via `lookupCellSync(lat, lon)`
 // which snaps to the nearest 0.5° grid cell. Each cell carries
 // predictions for BOTH F+NPP and Full+MODIS — `cellToResponse` picks
-// the active model based on the user's overlay toggle.
+// the active model based on the user's overlay toggle — and a `domain`
+// flag ("training" for Asia, "transfer" for the non-Asia cells where real
+// MODIS exists). The grid is global wherever the feature stack exists;
+// MODIS-absent regions (e.g. South America) are simply not in the file.
 
 import type {
   AtlasLookupCell,
@@ -143,8 +146,12 @@ export function cellToResponse(
       to_nearest_train_site: cell.nearest_train_km,
       to_nearest_us_validation_site: cell.nearest_us_km,
     },
+    // Carry the per-cell domain so the panel can flag non-Asia cells as
+    // transfer (extrapolation) predictions. v3 cells without a domain are
+    // treated as training (the lookup was Asia-only).
+    domain: cell.domain ?? 'training',
     ...(cityName && { name: cityName }),
-    _schema_version: 'atlas.v3',
+    _schema_version: 'atlas.v4',
   };
 }
 

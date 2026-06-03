@@ -14,19 +14,30 @@ import {
 } from './atlas-lookup';
 import { Camera, Eye, EyeOff, Info, Search, X } from 'lucide-react';
 
-// Asia training-domain bounding box for the F+NPP model. Any geocoded
-// search result that falls outside this rectangle is flagged
-// `outOfDomain` so the detail panel shows the "not scientifically
-// supported" message instead of fake prediction numbers.
-const ASIA_BBOX = { minLng: 25, maxLng: 180, minLat: -10, maxLat: 80 };
+// Non-Asia "transfer" cells (the rest of the globe where real MODIS exists)
+// are rendered as points coloured by the active model's anomaly, using the
+// same diverging colormap as the legend (0.5 red → 1.0 cream → 1.5 blue).
+// The Asia training region keeps its PMTiles raster; the transfer region is
+// the point layer. Both are clickable; the detail panel flags transfer cells.
+const TRANSFER_SOURCE_ID = 'transfer-cells-source';
+const TRANSFER_LAYER_ID = 'transfer-cells';
 
-function isInAsia(lng: number, lat: number): boolean {
-  return (
-    lng >= ASIA_BBOX.minLng &&
-    lng <= ASIA_BBOX.maxLng &&
-    lat >= ASIA_BBOX.minLat &&
-    lat <= ASIA_BBOX.maxLat
-  );
+function anomalyColorExpr(prop: string): maplibregl.ExpressionSpecification {
+  return [
+    'interpolate',
+    ['linear'],
+    ['get', prop],
+    0.5,
+    '#A4221A',
+    0.75,
+    '#F4C2A8',
+    1.0,
+    '#FAF8F5',
+    1.25,
+    '#3F7CAB',
+    1.5,
+    '#1F4068',
+  ] as maplibregl.ExpressionSpecification;
 }
 
 // Photon's GeoJSON response shape, narrowed to the fields we read.
@@ -223,51 +234,21 @@ export function AtlasMap() {
   // prediction at the same cell (rather than a stale snapshot from the
   // previous layer).
   React.useEffect(() => {
-    if (!response || response.outOfDomain || response.noPrediction) return;
-    void showDetailAt(
-      response.coord.lat,
-      response.coord.lon,
-      response.name,
-      false,
-    );
+    if (!response || response.noPrediction) return;
+    void showDetailAt(response.coord.lat, response.coord.lon, response.name);
     // showDetailAt is stable; only fire when activeOverlay actually flips.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeOverlay]);
 
   const showDetailAt = React.useCallback(
-    async (
-      lat: number,
-      lon: number,
-      cityName?: string,
-      outOfDomain?: boolean,
-    ) => {
+    async (lat: number, lon: number, cityName?: string) => {
       try {
         const cache = await loadLookup();
         const layer = activeOverlayRef.current;
-        const meta = cache.models[layer === 'Full+MODIS' ? 'fullmodis' : 'fnpp'];
-        if (outOfDomain) {
-          // Geocoder returned a non-Asia location: keep the existing
-          // "outside training domain" panel.
-          setResponse({
-            coord: { lat, lon },
-            prediction: {
-              rs_anomaly: 1.0,
-              rs_anomaly_ci_low: 1.0,
-              rs_anomaly_ci_high: 1.0,
-              configuration: meta.name,
-            },
-            shap_top3: [],
-            biome: { igbp_class: '—', igbp_code: -1 },
-            koppen: { zone: '—', label: '—' },
-            distance_km: {
-              to_nearest_train_site: -1,
-              to_nearest_us_validation_site: -1,
-            },
-            ...(cityName && { name: cityName }),
-            outOfDomain: true,
-          });
-          return;
-        }
+        // Snap to the nearest 0.5° lookup cell anywhere on the globe. A hit
+        // is rendered as a real prediction — flagged "transfer" by the detail
+        // panel when the cell is outside Asia. A miss (ocean, or a region with
+        // no MODIS such as South America) shows the "no prediction" panel.
         const cell = lookupCellSync(cache, lat, lon);
         if (!cell) {
           setResponse(noPredictionResponse(lat, lon, layer, cityName));
@@ -313,7 +294,6 @@ export function AtlasMap() {
       }
       const [lng, lat] = coords;
       const displayName = photonDisplayName(feat, fallbackName);
-      const inAsia = isInAsia(lng, lat);
 
       // Close the suggestions dropdown the moment we commit to a selection.
       setSuggestionsOpen(false);
@@ -324,7 +304,10 @@ export function AtlasMap() {
 
       map.flyTo({ center: [lng, lat], zoom: 4, duration: 2000 });
       map.once('moveend', () => {
-        void showDetailAt(lat, lng, displayName, !inAsia);
+        // Resolve wherever the search landed. Non-Asia hits come back as
+        // transfer cells (flagged in the panel); MODIS-absent points fall
+        // through to the "no prediction" panel.
+        void showDetailAt(lat, lng, displayName);
       });
     },
     [showDetailAt],
@@ -637,6 +620,64 @@ export function AtlasMap() {
           console.error('[atlas] training-sites fetch failed', err);
         });
 
+      // Render the non-Asia transfer cells as anomaly-coloured points so the
+      // global extension is visible on the globe (the PMTiles raster covers
+      // only Asia). Built once from the cached lookup; each point is clickable
+      // via the same map click handler and flagged "transfer" in the panel.
+      void loadLookup()
+        .then((cache) => {
+          if (map.getSource(TRANSFER_SOURCE_ID)) return;
+          const features: Array<{
+            type: 'Feature';
+            geometry: { type: 'Point'; coordinates: [number, number] };
+            properties: { anom_fnpp: number; anom_full: number };
+          }> = [];
+          for (const c of cache.byKey.values()) {
+            if (c.domain !== 'transfer') continue;
+            features.push({
+              type: 'Feature',
+              geometry: { type: 'Point', coordinates: [c.lon, c.lat] },
+              properties: {
+                anom_fnpp: c.fnpp.anomaly,
+                anom_full: c.fullmodis.anomaly,
+              },
+            });
+          }
+          map.addSource(TRANSFER_SOURCE_ID, {
+            type: 'geojson',
+            data: { type: 'FeatureCollection' as const, features },
+          });
+          const prop =
+            activeOverlayRef.current === 'Full+MODIS'
+              ? 'anom_full'
+              : 'anom_fnpp';
+          map.addLayer({
+            id: TRANSFER_LAYER_ID,
+            type: 'circle',
+            source: TRANSFER_SOURCE_ID,
+            paint: {
+              'circle-radius': [
+                'interpolate',
+                ['linear'],
+                ['zoom'],
+                0.5,
+                1.4,
+                2,
+                2.6,
+                4,
+                6,
+                6,
+                14,
+              ],
+              'circle-color': anomalyColorExpr(prop),
+              'circle-opacity': 0.85,
+              'circle-stroke-width': 0,
+            },
+          });
+          console.info('[atlas] transfer cells rendered', features.length);
+        })
+        .catch((err) => console.error('[atlas] transfer layer failed', err));
+
       // Drop the 8 Asian reference-city pins. Markers (DOM-based) avoid the
       // glyphs/font dependency a symbol+text-layer would require, and they
       // get free occlusion behind the globe in MapLibre 5's globe projection.
@@ -685,6 +726,28 @@ export function AtlasMap() {
     } else {
       map.once('load', apply);
     }
+  }, [activeOverlay]);
+
+  // Recolour the non-Asia transfer points when the active model flips, so
+  // they track the same anomaly the legend describes. The layer is added
+  // asynchronously inside map.on('load'); apply() no-ops until it exists.
+  React.useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => {
+      if (!map.getLayer(TRANSFER_LAYER_ID)) return;
+      const prop = activeOverlay === 'Full+MODIS' ? 'anom_full' : 'anom_fnpp';
+      map.setPaintProperty(
+        TRANSFER_LAYER_ID,
+        'circle-color',
+        anomalyColorExpr(prop),
+      );
+    };
+    apply();
+    map.on('load', apply);
+    return () => {
+      map.off('load', apply);
+    };
   }, [activeOverlay]);
 
   // Training-site density toggle.
@@ -848,7 +911,8 @@ export function AtlasMap() {
               </p>
             ) : (
               <p className="font-mono text-[0.6rem] leading-snug text-ink-soft">
-                Powered by Photon · OSM. Outside Asia → no prediction.
+                Powered by Photon · OSM. Non-Asia results are transfer
+                predictions (flagged in the panel).
               </p>
             )}
           </div>
@@ -879,6 +943,15 @@ export function AtlasMap() {
               Toggle between F+NPP (best transfer) and Full+MODIS (more
               features, worse transfer). Click any cell for real per-cell
               predictions.
+            </p>
+            <p className="mt-2 max-w-[20rem] border-t border-rule pt-2 font-mono text-[0.6rem] leading-snug text-ink-soft">
+              <span className="font-semibold text-ink">Asia</span> = training
+              region (raster).{' '}
+              <span className="font-semibold text-bedrock-warn">
+                Coloured points
+              </span>{' '}
+              elsewhere are transfer cells — extrapolations, flagged in each
+              panel. Regions with no MODIS data (e.g. South America) are absent.
             </p>
           </div>
 

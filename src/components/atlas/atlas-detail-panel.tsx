@@ -12,6 +12,14 @@ interface AtlasDetailPanelProps {
   onClose: () => void;
 }
 
+/** Format a coordinate with N/S + E/W hemisphere suffixes. Now that the atlas
+ *  is global, western/southern cells would otherwise read as negative °E/°N. */
+function fmtLatLon(lat: number, lon: number): string {
+  const ns = lat >= 0 ? 'N' : 'S';
+  const ew = lon >= 0 ? 'E' : 'W';
+  return `${Math.abs(lat).toFixed(3)}°${ns}, ${Math.abs(lon).toFixed(3)}°${ew}`;
+}
+
 export function AtlasDetailPanel({ response, onClose }: AtlasDetailPanelProps) {
   if (!response) return null;
 
@@ -20,6 +28,7 @@ export function AtlasDetailPanel({ response, onClose }: AtlasDetailPanelProps) {
     name,
     outOfDomain,
     noPrediction,
+    domain,
     prediction,
     shap_top3,
     features,
@@ -28,6 +37,8 @@ export function AtlasDetailPanel({ response, onClose }: AtlasDetailPanelProps) {
     distance_km,
   } = response;
 
+  const isTransfer = domain === 'transfer';
+
   return (
     <aside
       role="dialog"
@@ -35,7 +46,14 @@ export function AtlasDetailPanel({ response, onClose }: AtlasDetailPanelProps) {
       className="absolute right-0 top-0 z-30 flex h-full w-full max-w-md flex-col overflow-y-auto border-l border-rule bg-paper shadow-2xl animate-fade-in"
     >
       <div className="flex items-center justify-between border-b border-rule px-6 py-4">
-        <p className="meta-label">Atlas · {name ? 'location' : 'grid cell'}</p>
+        <p className="meta-label flex items-center gap-2">
+          Atlas · {name ? 'location' : 'grid cell'}
+          {isTransfer ? (
+            <span className="rounded-sm bg-bedrock-warn px-1.5 py-0.5 font-mono text-[0.6rem] font-semibold uppercase tracking-meta text-paper">
+              Transfer
+            </span>
+          ) : null}
+        </p>
         <button
           onClick={onClose}
           className="text-ink-soft transition-colors hover:text-accent"
@@ -53,7 +71,7 @@ export function AtlasDetailPanel({ response, onClose }: AtlasDetailPanelProps) {
             </p>
             <p className="mt-1 font-serif text-xl font-bold text-ink">{name}</p>
             <p className="mt-2 font-mono text-[0.65rem] text-ink-soft">
-              {coord.lat.toFixed(3)}°N, {coord.lon.toFixed(3)}°E
+              {fmtLatLon(coord.lat, coord.lon)}
             </p>
           </>
         ) : (
@@ -62,7 +80,7 @@ export function AtlasDetailPanel({ response, onClose }: AtlasDetailPanelProps) {
               Coordinate
             </p>
             <p className="mt-1 font-serif text-xl font-bold text-ink">
-              {coord.lat.toFixed(3)}°N, {coord.lon.toFixed(3)}°E
+              {fmtLatLon(coord.lat, coord.lon)}
             </p>
           </>
         )}
@@ -98,29 +116,64 @@ export function AtlasDetailPanel({ response, onClose }: AtlasDetailPanelProps) {
               No prediction available
             </p>
             <p className="mt-3 text-[0.95rem] leading-relaxed text-ink">
-              The clicked coordinate doesn&apos;t fall on a land cell in the
-              0.5° lookup grid. Most likely this is open ocean, a large
-              inland lake, an IGBP-water pixel, or extreme high-latitude
-              tundra outside the MODIS composite.
+              This coordinate isn&apos;t a covered land cell in the 0.5° grid.
+              It&apos;s open ocean or inland water — or it lies in a region with
+              no MODIS coverage. Both models require MODIS NPP/LST, which on disk
+              spans only ~31% of land, so South America and most of Africa and
+              Europe have no cells (not predicted, not invented).
             </p>
             <p className="mt-6 border-t border-rule pt-4 font-mono text-[0.65rem] leading-relaxed text-ink-soft">
-              Try clicking on a land area inside Asia, or search for a
-              city. The lookup covers 20,678 Asia land cells from
-              <span className="font-mono"> atlas_lookup.json</span>.
+              The lookup covers 27,393 land cells — 20,678 in the Asia training
+              region plus 6,715 transfer cells where real MODIS exists (North
+              America, Australia, parts of Africa). Try a land area there.
             </p>
           </>
         ) : (
-          <PredictionBody
-            prediction={prediction}
-            shapTop3={shap_top3}
-            features={features}
-            biome={biome}
-            koppen={koppen}
-            distance_km={distance_km}
-          />
+          <>
+            {isTransfer ? <TransferBanner /> : null}
+            <PredictionBody
+              prediction={prediction}
+              shapTop3={shap_top3}
+              features={features}
+              biome={biome}
+              koppen={koppen}
+              distance_km={distance_km}
+              isTransfer={isTransfer}
+            />
+          </>
         )}
       </div>
     </aside>
+  );
+}
+
+/**
+ * Mandatory transfer-prediction framing for non-Asia cells. Distinct amber
+ * (bedrock-warn) badge + caveat so a transfer extrapolation can never be
+ * mistaken for a validated Asia prediction.
+ */
+function TransferBanner() {
+  return (
+    <div
+      data-mshi-transfer-banner
+      className="mb-6 border-l-4 border-bedrock-warn bg-bedrock-warn/10 px-4 py-3"
+    >
+      <p className="flex items-center gap-2 font-mono text-[0.72rem] font-semibold uppercase tracking-meta text-bedrock-warn">
+        <span aria-hidden="true">▲</span>
+        Transfer prediction · Asia-trained model
+      </p>
+      <p className="mt-2 text-[0.82rem] leading-relaxed text-ink">
+        The model is trained on Asian data and transfers across continents only
+        weakly (R² = +0.145). Predictions outside Asia are illustrative
+        extrapolations, not validated.{' '}
+        <a
+          href="/methods"
+          className="font-semibold text-bedrock-warn underline decoration-bedrock-warn/40 underline-offset-2 hover:decoration-bedrock-warn"
+        >
+          See Methods.
+        </a>
+      </p>
+    </div>
   );
 }
 
@@ -131,6 +184,7 @@ function PredictionBody({
   biome,
   koppen,
   distance_km,
+  isTransfer,
 }: {
   prediction: AtlasResponse['prediction'];
   shapTop3: AtlasResponse['shap_top3'];
@@ -138,6 +192,7 @@ function PredictionBody({
   biome: AtlasResponse['biome'];
   koppen: AtlasResponse['koppen'];
   distance_km: AtlasResponse['distance_km'];
+  isTransfer: boolean;
 }) {
   return (
     <>
@@ -153,6 +208,11 @@ function PredictionBody({
         {prediction.rs_anomaly_ci_low.toFixed(2)},{' '}
         {prediction.rs_anomaly_ci_high.toFixed(2)}]
       </p>
+      {isTransfer ? (
+        <p className="mt-1 font-mono text-[0.62rem] uppercase tracking-meta text-bedrock-warn">
+          Extrapolated beyond the Asia training region
+        </p>
+      ) : null}
 
       <hr className="my-6 border-rule" />
 
