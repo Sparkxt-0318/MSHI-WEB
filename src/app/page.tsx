@@ -4,6 +4,7 @@ import { SectionFramework } from '@/components/home/section-framework';
 import { SectionAtlasTeaser } from '@/components/home/section-atlas-teaser';
 import { SectionMechanism } from '@/components/home/section-mechanism';
 import { SectionBiosensor } from '@/components/home/section-biosensor';
+import { SectionSimulation } from '@/components/home/section-simulation';
 import { SectionIntegration } from '@/components/home/section-integration';
 import { SectionRoadmap } from '@/components/home/section-roadmap';
 import { SiteFooter } from '@/components/site/site-footer';
@@ -17,6 +18,7 @@ export default function HomePage() {
       <SectionAtlasTeaser />
       <SectionMechanism />
       <SectionBiosensor />
+      <SectionSimulation />
       <SectionIntegration />
       <SectionRoadmap />
       <SiteFooter />

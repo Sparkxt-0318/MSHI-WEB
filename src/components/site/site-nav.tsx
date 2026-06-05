@@ -3,6 +3,7 @@ import Link from 'next/link';
 const NAV_ITEMS: ReadonlyArray<{ href: string; label: string }> = [
   { href: '/atlas', label: 'Atlas' },
   { href: '/biosensor', label: 'Biosensor' },
+  { href: '/simulation', label: 'Simulation' },
   { href: '/methods', label: 'Methods' },
   { href: '/paper', label: 'Paper' },
   { href: '/about', label: 'About' },

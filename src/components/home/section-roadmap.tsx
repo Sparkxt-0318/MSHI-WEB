@@ -27,7 +27,7 @@ export function SectionRoadmap() {
     <section id="roadmap" className="section-band border-t border-rule bg-paper">
       <div className="container-research">
         <Reveal>
-          <SectionLabel number="07" label="What's Next" />
+          <SectionLabel number="08" label="What's Next" />
           <h2 className="section-title mt-6 max-w-[24ch]">
             From benchmark to deployment.
           </h2>
