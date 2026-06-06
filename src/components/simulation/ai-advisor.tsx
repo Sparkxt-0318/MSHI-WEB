@@ -3,14 +3,20 @@
 import * as React from 'react';
 import {
   Activity,
+  Atom,
+  Beaker,
+  Biohazard,
   Brain,
   CheckCircle2,
   Cpu,
   Database,
   Eye,
   FlaskConical,
+  Layers,
   Monitor,
+  Target,
   TrendingUp,
+  Waves,
   Zap,
 } from 'lucide-react';
 import {
@@ -20,6 +26,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { MODEL_INFO, PRIORITY_TONE, type ActionKey } from './redox-ai';
+import { getCondition } from './soil-conditions';
 import { mulberry32 } from './sim-model';
 import type { RedoxSystemApi } from './use-redox-system';
 
@@ -32,6 +39,11 @@ const ACTION_ICON: Record<ActionKey, React.ReactNode> = {
   release_microbes: <FlaskConical className="h-5 w-5" />,
   oxidative: <Activity className="h-5 w-5" />,
   electron_donor: <FlaskConical className="h-5 w-5" />,
+  inoculate: <Atom className="h-5 w-5" />,
+  leaching: <Waves className="h-5 w-5" />,
+  chelation: <Biohazard className="h-5 w-5" />,
+  liming: <Beaker className="h-5 w-5" />,
+  tillage: <Layers className="h-5 w-5" />,
 };
 
 const MODEL_ICON: Record<string, React.ReactNode> = {
@@ -42,11 +54,18 @@ const MODEL_ICON: Record<string, React.ReactNode> = {
 
 const TRAINING_ROWS = (() => {
   const rand = mulberry32(28);
-  const soils = ['Healthy', 'Saline-stressed', 'Degraded'];
+  const soils = [
+    'Healthy',
+    'Saline-stressed',
+    'Heavy-metal',
+    'Acidic',
+    'Compacted',
+    'Sterile',
+  ];
   const tech = ['CV', 'CA'];
   return Array.from({ length: 28 }, (_, i) => ({
     id: `run_${String(i + 1).padStart(2, '0')}`,
-    soil: soils[Math.floor(rand() * 3)],
+    soil: soils[Math.floor(rand() * soils.length)],
     technique: tech[Math.floor(rand() * 2)],
     mshi: (0.15 + rand() * 0.8).toFixed(2),
   }));
@@ -123,6 +142,7 @@ export function AiAdvisor({ api }: { api: RedoxSystemApi }) {
   const { state, executeRecommendation } = api;
   const rec = state.recommendation;
   const toneHex = TONE_HEX[PRIORITY_TONE[rec.priority]];
+  const detected = getCondition(rec.condition);
 
   return (
     <div className="space-y-5">
@@ -153,7 +173,12 @@ export function AiAdvisor({ api }: { api: RedoxSystemApi }) {
           accentHex="#2C5F2D"
           icon={state.mode === 'remediation' ? <Monitor className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
         />
-        <MiniStat label="AI Status" value="Active" accentHex={VIOLET} icon={<Cpu className="h-5 w-5" />} />
+        <MiniStat
+          label="Detected Soil"
+          value={detected.short}
+          accentHex={detected.hex}
+          icon={<Cpu className="h-5 w-5" />}
+        />
       </div>
 
       {/* recommendation */}
@@ -172,12 +197,20 @@ export function AiAdvisor({ api }: { api: RedoxSystemApi }) {
                 <p className="font-mono text-[0.7rem] text-ink-soft">Confidence: {rec.confidence}%</p>
               </div>
             </div>
-            <span
-              className="rounded-sm px-2 py-1 font-mono text-[0.6rem] font-semibold uppercase tracking-meta text-paper"
-              style={{ background: toneHex }}
-            >
-              {rec.priority}
-            </span>
+            <div className="flex flex-col items-end gap-1.5">
+              <span
+                className="inline-flex items-center gap-1.5 rounded-sm border px-2 py-1 font-mono text-[0.58rem] font-semibold uppercase tracking-meta"
+                style={{ borderColor: detected.hex, color: detected.hex, background: `${detected.hex}12` }}
+              >
+                {detected.short}
+              </span>
+              <span
+                className="rounded-sm px-2 py-1 font-mono text-[0.6rem] font-semibold uppercase tracking-meta text-paper"
+                style={{ background: toneHex }}
+              >
+                {rec.priority}
+              </span>
+            </div>
           </div>
 
           {/* confidence bar */}
@@ -185,7 +218,20 @@ export function AiAdvisor({ api }: { api: RedoxSystemApi }) {
             <div className="h-full rounded-full" style={{ width: `${rec.confidence}%`, background: toneHex }} />
           </div>
 
-          <p className="mt-4 max-w-prose text-[0.92rem] leading-relaxed text-ink">{rec.rationale}</p>
+          {/* diagnosed primary problem */}
+          <div className="mt-4 flex items-start gap-2 rounded-md border border-rule bg-cream/40 px-3 py-2">
+            <span className="mt-0.5 shrink-0 text-ink-soft">
+              <Target className="h-3.5 w-3.5" />
+            </span>
+            <p className="text-[0.85rem] leading-snug text-ink">
+              <span className="font-mono text-[0.6rem] uppercase tracking-meta text-ink-soft">
+                Primary problem ·{' '}
+              </span>
+              {rec.problem}
+            </p>
+          </div>
+
+          <p className="mt-3 max-w-prose text-[0.92rem] leading-relaxed text-ink">{rec.rationale}</p>
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
             <p className="font-mono text-[0.72rem] text-ink-soft">

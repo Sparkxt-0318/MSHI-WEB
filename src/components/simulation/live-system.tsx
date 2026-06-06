@@ -5,6 +5,7 @@ import { Brain, Monitor, Play, Pause, RotateCcw } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { MonitorConsole } from './monitor-console';
 import { AiAdvisor } from './ai-advisor';
+import { ScenarioSelector } from './scenario-selector';
 import { useRedoxSystem } from './use-redox-system';
 
 /**
@@ -33,9 +34,10 @@ export function LiveSystem() {
       <p className="mt-6 max-w-prose text-[1rem] leading-relaxed text-ink-soft">
         A simulated operator console for the bioelectrochemical remediation rig. Press
         <span className="text-ink"> Start</span> and it senses soil redox potential in real
-        time while an AI advisor proposes soil-science-backed interventions. Try the actions
-        — release microbes, cycle the redox potential, or execute the AI&rsquo;s
-        recommendation — and watch the redox move back toward the healthy reducing window.
+        time while an AI advisor proposes soil-science-backed interventions. Load a degraded
+        soil — saline, heavy-metal, acidic, compacted or biologically sterile — and watch the
+        AI re-diagnose the primary problem and adapt its remediation. Switch scenarios anytime,
+        execute the recommendation, and watch the reading move back toward the healthy window.
       </p>
 
       {/* experiment control bar */}
@@ -68,8 +70,9 @@ export function LiveSystem() {
         </div>
       </div>
 
-      {/* dashboards (gated until the experiment is started) */}
-      <div className="relative mt-6">
+      {/* scenario selector + dashboards (gated until the experiment is started) */}
+      <div className="relative mt-6 space-y-6">
+        <ScenarioSelector api={api} />
         <Tabs defaultValue="monitor">
           <TabsList>
             <TabsTrigger value="monitor">
