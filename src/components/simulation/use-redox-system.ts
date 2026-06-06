@@ -50,6 +50,11 @@ export interface RedoxSystemState {
 
 export interface RedoxSystemApi {
   state: RedoxSystemState;
+  running: boolean;
+  started: boolean;
+  start: () => void;
+  pause: () => void;
+  reset: () => void;
   releaseMicrobes: () => void;
   redoxCycling: () => void;
   executeRecommendation: () => void;
@@ -117,6 +122,8 @@ export function useRedoxSystem(): RedoxSystemApi {
   const recCounterRef = React.useRef(0);
 
   const [state, setState] = React.useState<RedoxSystemState>(initialState);
+  const [running, setRunning] = React.useState(false);
+  const [started, setStarted] = React.useState(false);
 
   const pushLog = React.useCallback((text: string, kind: LogKind) => {
     const entry: LogEntry = {
@@ -239,35 +246,63 @@ export function useRedoxSystem(): RedoxSystemApi {
     URL.revokeObjectURL(url);
   }, []);
 
-  // Seed a little history, then run the live loop (reduced-motion → slower).
-  React.useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const now = Date.now();
-    const seed: { text: string; kind: LogKind; ago: number }[] = [
-      { text: 'System initialized · sensing active', kind: 'routine', ago: 28 },
-      { text: 'Redox cycling stimulation activated', kind: 'stim', ago: 19 },
-      { text: 'Switched to Cyclic Voltammetry measurement', kind: 'scan', ago: 12 },
-      { text: 'Sensing cycle completed', kind: 'scan', ago: 4 },
-    ];
-    logRef.current = seed
-      .map((s) => ({
+  const seedLog = React.useCallback(() => {
+    logRef.current = [
+      {
         id: ++logIdRef.current,
-        text: s.text,
-        time: formatTime(new Date(now - s.ago * 1000)),
-        kind: s.kind,
-      }))
-      .reverse();
+        text: 'Experiment started · sensing active',
+        time: formatTime(new Date()),
+        kind: 'routine',
+      },
+    ];
+  }, []);
 
+  const start = React.useCallback(() => {
+    setStarted((was) => {
+      if (!was) seedLog();
+      return true;
+    });
+    setRunning(true);
+  }, [seedLog]);
+
+  const pause = React.useCallback(() => setRunning(false), []);
+
+  const reset = React.useCallback(() => {
+    setRunning(false);
+    setStarted(false);
+    ehRef.current = EH0;
+    baselineRef.current = EH0;
+    curRef.current = CUR0;
+    curBaseRef.current = CUR0;
+    scanRef.current = SCAN_INTERVAL_S;
+    tRef.current = CA0.length;
+    modeRef.current = 'remediation';
+    measRef.current = 'CA';
+    caRef.current = CA0;
+    logRef.current = [];
+    recRef.current = evaluate({ eh: EH0, current: CUR0 });
+    recCounterRef.current = 0;
+    setState(initialState());
+  }, []);
+
+  // Run the live loop only while started + running (reduced-motion → slower).
+  React.useEffect(() => {
+    if (!running || typeof window === 'undefined') return;
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const period = reduced ? 1000 : TICK_MS;
     const id = window.setInterval(() => {
       if (!document.hidden) tick();
     }, period);
     return () => window.clearInterval(id);
-  }, [tick]);
+  }, [running, tick]);
 
   return {
     state,
+    running,
+    started,
+    start,
+    pause,
+    reset,
     releaseMicrobes,
     redoxCycling,
     executeRecommendation,

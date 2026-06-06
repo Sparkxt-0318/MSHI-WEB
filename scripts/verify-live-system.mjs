@@ -47,6 +47,15 @@ await monitorTab.scrollIntoViewIfNeeded();
 if ((await monitorTab.count()) && (await aiTab.count())) ok('Live System tabs present');
 else fail('Live System tabs missing');
 
+// The experiment is gated behind an explicit Start.
+const startBtn = page.getByRole('button', { name: /Start Experiment/i });
+if ((await startBtn.count()) >= 1) ok('Start Experiment gate present');
+else fail('Start Experiment gate missing');
+await startBtn.first().click();
+await page.waitForTimeout(900);
+if ((await page.getByText('Experiment · Live').count()) >= 1) ok('experiment is Live after Start');
+else fail('experiment did not go Live after Start');
+
 // Monitoring console content.
 for (const t of ['Soil Redox Potential', 'System Actions', 'System Event Log', 'Next Scan In']) {
   if ((await page.getByText(t, { exact: false }).count()) >= 1) ok(`monitor shows "${t}"`);
