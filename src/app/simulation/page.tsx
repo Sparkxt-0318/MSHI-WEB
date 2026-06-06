@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import dynamic from 'next/dynamic';
 import { SectionLabel } from '@/components/site/section-label';
 import { SiteFooter } from '@/components/site/site-footer';
+import { LiveSystem } from '@/components/simulation/live-system';
 
 // React Three Fiber / three touch `window` at construction; load on the client only.
 const SimulationStage = dynamic(
@@ -45,6 +46,12 @@ export default function SimulationPage() {
           <div className="mt-12">
             <SimulationStage />
           </div>
+        </div>
+      </section>
+
+      <section className="section-band border-t border-rule bg-cream/30">
+        <div className="container-research">
+          <LiveSystem />
         </div>
       </section>
 
