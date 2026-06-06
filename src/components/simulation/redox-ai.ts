@@ -135,7 +135,7 @@ export function evaluate({ eh, current }: RedoxSnapshot): Recommendation {
     priority: 'Low',
     confidence: 92,
     rationale:
-      'Redox potential is within the optimal reducing window (−220 to −180 mV) and the anaerobic community is well-poised. No intervention required; continue 30-second sensing cycles.',
+      'Redox potential is within the optimal reducing window (−220 to −180 mV) and the anaerobic community is well-poised. No intervention required; continue 15-second sensing cycles.',
     expected: 'Hold Eh within ±10 mV',
   };
 }

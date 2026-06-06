@@ -15,7 +15,7 @@ import {
 } from './redox-ai';
 
 const TICK_MS = 250;
-const SCAN_INTERVAL_S = 30;
+const SCAN_INTERVAL_S = 15;
 const CA_WINDOW = 60; // rolling CA samples shown
 const LOG_CAP = 40;
 
