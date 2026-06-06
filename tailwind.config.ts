@@ -23,6 +23,7 @@ const config: Config = {
           'blue-dark': '#1F4068',
           good: '#2C5F2D',
           warn: '#B85C00',
+          violet: '#6D28D9',
         },
         cream: '#F8F4EE',
       },
