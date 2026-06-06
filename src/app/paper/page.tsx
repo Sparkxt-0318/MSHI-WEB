@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Download, ExternalLink } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { SectionLabel } from '@/components/site/section-label';
 import { SiteFooter } from '@/components/site/site-footer';
 import { siteConfig } from '@/lib/site-config';
@@ -36,15 +36,6 @@ export default function PaperPage() {
             >
               <Download className="h-3.5 w-3.5" />
               Download PDF
-            </Link>
-            <Link
-              href={siteConfig.scienceRepo}
-              className="inline-flex items-center gap-2 border border-ink bg-paper px-4 py-2 font-mono text-[0.7rem] uppercase tracking-meta text-ink transition-colors hover:bg-ink hover:text-paper"
-              target="_blank"
-              rel="noreferrer noopener"
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-              Code &amp; data
             </Link>
           </div>
 
