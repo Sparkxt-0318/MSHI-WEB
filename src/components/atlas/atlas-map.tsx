@@ -528,13 +528,29 @@ export function AtlasMap() {
       setMapError(msg);
     });
 
-    map.addControl(
-      new maplibregl.NavigationControl({
-        showCompass: true,
-        visualizePitch: false,
-      }),
-      'bottom-right',
-    );
+    // Zoom + compass buttons live in the bottom-right — exactly where the
+    // legend bar spans full-width on a phone. Touch devices pinch-zoom and
+    // rotate natively, so the NavigationControl is desktop-only. A media-query
+    // listener keeps it in sync if the viewport later crosses the breakpoint
+    // (orientation change, desktop window resize, responsive dev tools).
+    const mobileMQL = window.matchMedia('(max-width: 639px)');
+    let navControl: maplibregl.NavigationControl | null = null;
+    const syncNavControl = () => {
+      if (mobileMQL.matches) {
+        if (navControl) {
+          map.removeControl(navControl);
+          navControl = null;
+        }
+      } else if (!navControl) {
+        navControl = new maplibregl.NavigationControl({
+          showCompass: true,
+          visualizePitch: false,
+        });
+        map.addControl(navControl, 'bottom-right');
+      }
+    };
+    syncNavControl();
+    mobileMQL.addEventListener('change', syncNavControl);
 
     map.addControl(
       new maplibregl.AttributionControl({ compact: true }),
@@ -700,6 +716,7 @@ export function AtlasMap() {
     });
 
     return () => {
+      mobileMQL.removeEventListener('change', syncNavControl);
       for (const m of markers) m.remove();
       resizeObs.disconnect();
       map.remove();
@@ -780,7 +797,9 @@ export function AtlasMap() {
   }, [showSites]);
 
   return (
-    <div className="relative h-[calc(100vh-5rem)] w-full bg-cream">
+    // dvh (not vh) so the bottom legend bar isn't swallowed by the mobile
+    // browser URL bar; the -4rem-1px matches the sticky nav's 64px + hairline.
+    <div className="relative h-[calc(100dvh-4rem-1px)] w-full bg-cream">
       {mapError ? (
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-cream p-12 text-center">
           <p className="meta-label">Atlas · map failed to load</p>
@@ -808,12 +827,14 @@ export function AtlasMap() {
             }}
           />
 
-          {/* Top-right search */}
+          {/* Search. Full-width across the top on a phone (so the 280px box
+              doesn't collide with the top-left overlay panel); a fixed 280px
+              box pinned top-right from sm up. z-30 keeps the suggestions
+              dropdown above the overlay panel it now sits over on mobile. */}
           <div
             ref={searchBoxRef}
             data-mshi-atlas-search
-            className="pointer-events-auto absolute right-4 top-4 z-20 flex flex-col gap-1 border border-rule bg-paper/95 p-2 backdrop-blur-sm"
-            style={{ width: 280 }}
+            className="pointer-events-auto absolute left-3 right-3 top-3 z-30 flex flex-col gap-1 border border-rule bg-paper/95 p-2 backdrop-blur-sm sm:left-auto sm:top-4 sm:right-4 sm:w-[280px]"
           >
             <form
               onSubmit={handleSearchSubmit}
@@ -842,7 +863,9 @@ export function AtlasMap() {
                     ? `atlas-suggestion-${highlightIdx}`
                     : undefined
                 }
-                className="flex-1 border border-rule bg-paper px-2 py-1 font-mono text-[0.75rem] text-ink placeholder:text-ink-soft focus:border-ink focus:outline-none disabled:opacity-50"
+                // 16px on mobile prevents iOS Safari from auto-zooming the
+                // page when the field gains focus; 12px (compact) from sm up.
+                className="flex-1 border border-rule bg-paper px-2 py-1 font-mono text-[16px] text-ink placeholder:text-ink-soft focus:border-ink focus:outline-none disabled:opacity-50 sm:text-[0.75rem]"
               />
               <button
                 type="submit"
@@ -910,15 +933,17 @@ export function AtlasMap() {
                 {searchError}
               </p>
             ) : (
-              <p className="font-mono text-[0.6rem] leading-snug text-ink-soft">
+              <p className="hidden font-mono text-[0.6rem] leading-snug text-ink-soft sm:block">
                 Powered by Photon · OSM. Non-Asia results are transfer
                 predictions (flagged in the panel).
               </p>
             )}
           </div>
 
-          {/* Top-left overlay toggle */}
-          <div className="pointer-events-auto absolute left-4 top-4 z-20 flex flex-col gap-2 border border-rule bg-paper/95 p-3 backdrop-blur-sm">
+          {/* Overlay toggle. On a phone it tucks under the full-width search
+              bar (top-16) instead of fighting it for the top-left corner, and
+              the explanatory paragraphs collapse so it stays a compact chip. */}
+          <div className="pointer-events-auto absolute left-3 top-16 z-20 flex flex-col gap-2 border border-rule bg-paper/95 p-2 backdrop-blur-sm sm:left-4 sm:top-4 sm:p-3">
             <p className="meta-label text-ink-soft">Overlay</p>
             <div className="flex flex-wrap gap-1">
               {OVERLAY_LAYERS.map((l) => {
@@ -939,12 +964,12 @@ export function AtlasMap() {
                 );
               })}
             </div>
-            <p className="mt-1 max-w-[20rem] font-mono text-[0.6rem] leading-snug text-ink-soft">
+            <p className="mt-1 hidden max-w-[20rem] font-mono text-[0.6rem] leading-snug text-ink-soft sm:block">
               Toggle between F+NPP (best transfer) and Full+MODIS (more
               features, worse transfer). Click any cell for real per-cell
               predictions.
             </p>
-            <p className="mt-2 max-w-[20rem] border-t border-rule pt-2 font-mono text-[0.6rem] leading-snug text-ink-soft">
+            <p className="mt-2 hidden max-w-[20rem] border-t border-rule pt-2 font-mono text-[0.6rem] leading-snug text-ink-soft sm:block">
               <span className="font-semibold text-ink">Asia</span> = training
               region (raster).{' '}
               <span className="font-semibold text-bedrock-warn">
@@ -959,7 +984,9 @@ export function AtlasMap() {
               clean, chrome-free globe for exploration and screenshots; a
               bottom-left pill brings it back. */}
           {barVisible ? (
-            <div className="pointer-events-auto absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-6 border border-rule bg-paper/95 px-5 py-3 backdrop-blur-sm">
+            // Phone: full-width strip that wraps its sections onto multiple
+            // rows. sm+: the original centered single-row bar.
+            <div className="pointer-events-auto absolute bottom-3 left-3 right-3 z-20 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border border-rule bg-paper/95 px-4 py-3 backdrop-blur-sm sm:bottom-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:flex-nowrap sm:gap-6 sm:px-5">
               <div>
                 <p className="meta-label flex items-center gap-1 text-ink-soft">
                   Rs anomaly · {activeOverlay} ·{' '}
@@ -994,7 +1021,7 @@ export function AtlasMap() {
                   <span>1.5 · elevated</span>
                 </div>
               </div>
-              <div className="border-l border-rule pl-6">
+              <div className="sm:border-l sm:border-rule sm:pl-6">
                 <p className="meta-label text-ink-soft">
                   Sites{siteCount ? ` · n=${siteCount}` : ''}
                 </p>
@@ -1020,7 +1047,7 @@ export function AtlasMap() {
                 data-mshi-screenshot
                 onClick={handleScreenshot}
                 title="Download a PNG of the current map view"
-                className={`ml-2 inline-flex items-center gap-1.5 border px-2.5 py-1.5 font-mono text-[0.65rem] uppercase tracking-meta transition-colors ${
+                className={`inline-flex items-center gap-1.5 border px-2.5 py-1.5 font-mono text-[0.65rem] uppercase tracking-meta transition-colors sm:ml-2 ${
                   screenshotSaved
                     ? 'border-bedrock-good bg-bedrock-good/10 text-bedrock-good'
                     : 'border-rule text-ink-soft hover:border-ink hover:text-ink'
@@ -1035,7 +1062,7 @@ export function AtlasMap() {
                 onClick={() => setBarVisible(false)}
                 aria-label="Hide legend bar"
                 title="Hide this bar for a clean, distraction-free view"
-                className="ml-1 flex items-center self-stretch border-l border-rule pl-3 text-ink-soft transition-colors hover:text-ink"
+                className="flex items-center text-ink-soft transition-colors hover:text-ink sm:ml-1 sm:self-stretch sm:border-l sm:border-rule sm:pl-3"
               >
                 <EyeOff className="h-4 w-4" />
               </button>
@@ -1084,7 +1111,7 @@ function AnomalyInfoModal({ onClose }: { onClose: () => void }) {
       role="dialog"
       aria-modal="true"
       aria-label="About the Rs anomaly metric"
-      className="absolute inset-0 z-40 flex items-center justify-center bg-ink/40 p-6"
+      className="absolute inset-0 z-40 flex items-center justify-center bg-ink/40 p-4 sm:p-6"
       onPointerDown={(ev) => {
         // Click on the backdrop closes; clicks inside the card stop here.
         if (ev.target === ev.currentTarget) onClose();
