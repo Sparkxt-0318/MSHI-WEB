@@ -10,7 +10,7 @@ export function SectionIntegration() {
     >
       <div className="container-research">
         <Reveal>
-          <SectionLabel number="06" label="Integration" />
+          <SectionLabel number="07" label="Integration" />
           <h2 className="section-title mt-6 max-w-[28ch]">
             Where the centimeter meets the kilometer.
           </h2>
