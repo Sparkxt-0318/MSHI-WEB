@@ -1,7 +1,7 @@
 /**
  * Schema for the /biosensor gallery. Mirrors public/data/biosensor_samples.json,
- * which is generated from the real published corpus (Sparkxt-0318/MSHI@main:
- * biosensor_samples/) by scripts/build_biosensor_data.py. Real data only.
+ * which is generated from the real published MSHI biosensor corpus by
+ * scripts/build_biosensor_data.py. Real data only.
  *
  * The measurement set is non-uniform by study design: Phase I samples carry
  * CA + CV; Phase II adds OCP. There is no DPV trace in the corpus.
@@ -42,7 +42,7 @@ export interface BiosensorSample {
 
 export interface BiosensorDataset {
   generated_from: string;
-  raw_provenance: string;
+  raw_provenance?: string;
   note: string;
   sample_count: number;
   samples: BiosensorSample[];

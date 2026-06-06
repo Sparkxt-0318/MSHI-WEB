@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ExternalLink } from 'lucide-react';
 import { SectionLabel } from '@/components/site/section-label';
 import { SampleCard } from '@/components/biosensor/sample-card';
 import { DpvReferenceFigure } from '@/components/biosensor/dpv-reference';
@@ -151,15 +150,6 @@ export default function BiosensorPage() {
               the{' '}
               <Link href="/paper" className="link-arrow">
                 paper
-              </Link>
-              , and the code lives in the{' '}
-              <Link
-                href={siteConfig.scienceRepo}
-                className="link-arrow inline-flex items-center gap-1"
-                target="_blank"
-                rel="noreferrer noopener"
-              >
-                MSHI repository <ExternalLink className="h-3 w-3" />
               </Link>
               .
             </p>

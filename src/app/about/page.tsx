@@ -51,19 +51,6 @@ export default function AboutPage() {
                 </Link>
               </dd>
             </div>
-            <div className="flex gap-4">
-              <dt className="w-32 text-ink-soft">Code</dt>
-              <dd>
-                <Link
-                  href={siteConfig.scienceRepo}
-                  className="link-arrow"
-                  target="_blank"
-                  rel="noreferrer noopener"
-                >
-                  github.com/Sparkxt-0318/MSHI
-                </Link>
-              </dd>
-            </div>
           </dl>
         </div>
       </section>
@@ -128,18 +115,9 @@ export default function AboutPage() {
             Get in touch
           </h2>
           <p className="body-prose mt-4">
-            For research correspondence:{' '}
+            For research correspondence, or code and data inquiries:{' '}
             <Link href={`mailto:${siteConfig.email}`} className="link-arrow">
               {siteConfig.email}
-            </Link>
-            . For code or data issues, prefer GitHub issues at the{' '}
-            <Link
-              href={siteConfig.scienceRepo}
-              className="link-arrow"
-              target="_blank"
-              rel="noreferrer noopener"
-            >
-              MSHI repo
             </Link>
             .
           </p>

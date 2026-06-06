@@ -338,17 +338,8 @@ export default function MethodsPage() {
           <p className="body-prose mt-5">
             All training data manifests, feature extraction scripts, model
             artifacts (xgb_*.json), and held-out scoring routines are
-            published at{' '}
-            <Link
-              href="https://github.com/Sparkxt-0318/MSHI"
-              className="link-arrow"
-              target="_blank"
-              rel="noreferrer noopener"
-            >
-              github.com/Sparkxt-0318/MSHI
-            </Link>
-            . The atlas raster overlays on this site are exported directly
-            from the same model artifacts.
+            available on request. The atlas raster overlays on this site are
+            exported directly from the same model artifacts.
           </p>
         </div>
       </article>

@@ -231,8 +231,7 @@ def main() -> int:
     samples.sort(key=lambda s: (s["classification"], s["phase"], s["trial_id"]))
 
     payload = {
-        "generated_from": "Sparkxt-0318/MSHI@main:biosensor_samples/",
-        "raw_provenance": RAW_BASE,
+        "generated_from": "published MSHI biosensor corpus",
         "note": (
             "Validated electrochemistry from the published MSHI dataset. "
             "Variable techniques per sample by study design (Phase I: CA+CV; "

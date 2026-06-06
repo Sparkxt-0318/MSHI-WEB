@@ -54,14 +54,6 @@ export function SectionRoadmap() {
         <Reveal delayMs={400}>
           <div className="mt-14 flex flex-wrap items-center gap-x-10 gap-y-4">
             <Link
-              href={siteConfig.scienceRepo}
-              className="link-arrow inline-flex items-center gap-2"
-              target="_blank"
-              rel="noreferrer noopener"
-            >
-              github.com/Sparkxt-0318/MSHI <ArrowUpRight className="h-3.5 w-3.5" />
-            </Link>
-            <Link
               href="/paper"
               className="link-arrow inline-flex items-center gap-2"
             >
