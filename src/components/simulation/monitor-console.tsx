@@ -13,20 +13,39 @@ import {
 import {
   Activity,
   AlertTriangle,
+  Atom,
   CheckCircle2,
   Download,
+  Droplets,
   Eye,
   FlaskConical,
   Monitor,
   Timer,
+  Waves,
+  Wind,
   Zap,
 } from 'lucide-react';
 import type { LogKind } from './redox-ai';
+import {
+  METRIC_META,
+  metricTone,
+  type MetricKey,
+  type Tone,
+} from './soil-conditions';
 import type { CaPoint, CvPoint, LogEntry, RedoxSystemApi } from './use-redox-system';
 
-const TONE_HEX = { good: '#2C5F2D', warn: '#B85C00', bad: '#A4221A' } as const;
+const TONE_HEX: Record<Tone, string> = { good: '#2C5F2D', warn: '#B85C00', bad: '#A4221A' };
 const CA_HEX = '#A4221A';
 const CV_HEX = '#3F7CAB';
+
+const TONE_WORD: Record<Tone, string> = { good: 'Optimal', warn: 'Elevated', bad: 'Critical' };
+
+const CHEM_ICON: Record<'ph' | 'salinity' | 'cadmium' | 'aeration', React.ReactNode> = {
+  ph: <Droplets className="h-5 w-5" />,
+  salinity: <Waves className="h-5 w-5" />,
+  cadmium: <Atom className="h-5 w-5" />,
+  aeration: <Wind className="h-5 w-5" />,
+};
 
 const LOG_HEX: Record<LogKind, string> = {
   stim: '#3F7CAB',
@@ -36,6 +55,11 @@ const LOG_HEX: Record<LogKind, string> = {
   mode: '#1F4068',
   scan: '#3A4048',
   routine: '#C8CCD2',
+  bio: '#6D28D9',
+  leach: '#3F7CAB',
+  chelate: '#A4221A',
+  lime: '#B85C00',
+  till: '#1F4068',
 };
 
 function StatCard({
@@ -266,6 +290,31 @@ export function MonitorConsole({ api }: { api: RedoxSystemApi }) {
           icon={<Timer className="h-5 w-5" />}
           sub={`Scanning every ${state.scanInterval}s`}
         />
+      </div>
+
+      {/* soil-chemistry channels — the multi-parameter signature the sensor reads */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {(['ph', 'salinity', 'cadmium', 'aeration'] as const).map((key) => {
+          const value = state[key];
+          const tone = metricTone(key as MetricKey, value);
+          const hex = TONE_HEX[tone];
+          const meta = METRIC_META[key];
+          return (
+            <StatCard
+              key={key}
+              label={meta.label}
+              value={`${meta.format(value)}${meta.unit ? ` ${meta.unit}` : ''}`}
+              accentHex={hex}
+              valueHex={hex}
+              icon={CHEM_ICON[key]}
+              subNode={
+                <p className="mt-0.5 text-[0.78rem] font-semibold" style={{ color: hex }}>
+                  {TONE_WORD[tone]}
+                </p>
+              }
+            />
+          );
+        })}
       </div>
 
       {/* system actions */}
