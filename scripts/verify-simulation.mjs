@@ -124,9 +124,11 @@ await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
 const section = page.locator('#simulation');
 await section.scrollIntoViewIfNeeded();
 await page.waitForTimeout(800);
-const homeCanvas = await page.locator('canvas').count();
-if (homeCanvas === 0) ok('homepage has no WebGL canvas (teaser is a static poster)');
-else fail(`homepage unexpectedly has ${homeCanvas} canvas element(s)`);
+// Scoped to the #simulation teaser: the homepage now also has a 3D canvas in
+// the #framework-zoom scale-zoom, so a page-wide count is no longer 0.
+const homeCanvas = await section.locator('canvas').count();
+if (homeCanvas === 0) ok('simulation teaser has no WebGL canvas (static poster)');
+else fail(`simulation teaser unexpectedly has ${homeCanvas} canvas element(s)`);
 const teaserLink = await section.locator('a[href="/simulation"]').count();
 if (teaserLink >= 1) ok('teaser links to /simulation');
 else fail('teaser /simulation link missing');
