@@ -22,6 +22,7 @@ export const metadata: Metadata = {
 export default function SimulationPage() {
   return (
     <>
+      {/* Hero — leads with the live console, then the 3D time-lapse below */}
       <section className="section-band border-b border-rule bg-paper">
         <div className="container-research">
           <SectionLabel number="06" label="The Simulation" />
@@ -29,29 +30,44 @@ export default function SimulationPage() {
             Watch the measurement come alive.
           </h1>
           <p className="mt-8 max-w-prose text-lg leading-relaxed text-ink-soft">
-            The soil biosensor, brought to life. A real trial runs for days —
-            here it is a simplified, sped-up illustration compressed into a few
-            seconds. Watch electrochemically active bacteria colonize the
-            working electrode, stream electrons into the circuit, and drive the
-            current that becomes a{' '}
-            <span className="text-ink">Microbial Soil Health Index</span>. Three
-            soils run side by side: a healthy soil teeming with life, a
-            salt-stressed soil, and a degraded one.
+            The soil biosensor, brought to life — and put to work. First, a live
+            operator console senses soil redox in real time while an AI advisor
+            proposes soil-science-backed interventions. Then, at the foot of the
+            page, a fast-forward 3D time-lapse shows the biology those readings
+            come from: electroactive bacteria colonizing the electrode across
+            three soils.
+          </p>
+        </div>
+      </section>
+
+      {/* Live System — operator console + AI advisor (cards + graphs) */}
+      <section className="section-band border-b border-rule bg-cream/30">
+        <div className="container-research">
+          <LiveSystem />
+        </div>
+      </section>
+
+      {/* The 3D three-electrode time-lapse, at the bottom */}
+      <section className="section-band border-t border-rule bg-paper">
+        <div className="container-research">
+          <p className="meta-label">The measurement · 3D time-lapse</p>
+          <h2 className="section-title mt-4 max-w-[24ch]">
+            The science behind the readings.
+          </h2>
+          <p className="mt-6 max-w-prose text-[1rem] leading-relaxed text-ink-soft">
+            A simplified, sped-up illustration of the three-electrode cell:
+            electroactive bacteria colonize the working electrode, stream
+            electrons into the circuit, and drive the current that becomes a{' '}
+            <span className="text-ink">Microbial Soil Health Index</span> — three
+            soils side by side.
           </p>
           <p className="mt-4 max-w-prose font-mono text-[0.78rem] leading-relaxed text-ink-soft">
             Drag the scene to look around the electrodes · play, pause and
             fast-forward · scrub to any moment.
           </p>
-
-          <div className="mt-12">
+          <div className="mt-10">
             <SimulationStage />
           </div>
-        </div>
-      </section>
-
-      <section className="section-band border-t border-rule bg-cream/30">
-        <div className="container-research">
-          <LiveSystem />
         </div>
       </section>
 
