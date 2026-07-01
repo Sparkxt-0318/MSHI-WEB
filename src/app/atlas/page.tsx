@@ -10,7 +10,7 @@ const AtlasMap = dynamic(
 export const metadata: Metadata = {
   title: 'Atlas',
   description:
-    'Interactive cross-continental Rs anomaly atlas. Click any cell in Asia to inspect predicted anomaly, top-3 SHAP drivers, biome class, and distance to nearest training/validation site.',
+    'An interactive map of predicted soil respiration across continents. Click any cell to see its predicted anomaly, the top three inputs driving that prediction (its SHAP drivers), the local vegetation type, and how far it sits from the nearest training and validation sites.',
 };
 
 export default function AtlasPage() {

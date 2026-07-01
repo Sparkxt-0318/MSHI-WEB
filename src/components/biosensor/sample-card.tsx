@@ -36,12 +36,12 @@ const TECH_LABEL: Record<TechniqueKey, string> = {
 function interpretScore(s: BiosensorSample): string {
   const score = s.mshi_score;
   if (s.classification === 'healthy') {
-    return `An MSHI score of ${score.toFixed(2)} reflects a sustained electron-transfer current — the electrochemically active biofilm is metabolising strongly, the signature of a healthy microbial community.`;
+    return `An MSHI score of ${score.toFixed(2)} reflects a steady electron-transfer current — the electroactive biofilm is metabolizing strongly, the mark of a healthy microbial community.`;
   }
   if (s.classification === 'unhealthy') {
-    return `An MSHI score of ${score.toFixed(2)} indicates suppressed faradaic current: extracellular electron transfer is impaired, consistent with a stressed or metabolically arrested microbial community.`;
+    return `An MSHI score of ${score.toFixed(2)} means a suppressed biological (faradaic) current: the microbes' extracellular electron transfer is impaired, consistent with a stressed or shut-down community.`;
   }
-  return `An MSHI score of ${score.toFixed(2)} captures the saline paradox — high ionic conductivity coexists with collapsed biological current, so the soil reads electrically "active" but is biologically arrested.`;
+  return `An MSHI score of ${score.toFixed(2)} captures the salinity paradox — the soil conducts electricity well (all those salt ions) even as its biological current collapses, so it reads electrically "active" while its biology has stalled.`;
 }
 
 interface SampleCardProps {
@@ -127,12 +127,12 @@ export function SampleCard({ sample, dpv }: SampleCardProps) {
               <ElectrochemTraces sample={sample} dpv={dpv} />
             </div>
             <p className="mt-3 font-mono text-[0.65rem] leading-relaxed text-ink-soft">
-              CA / CV / OCP are this sample&rsquo;s measured exports,
-              downsampled by even stride (shape preserved); CA omits the
-              initial charging transient (instrument noise). The DPV square
-              is the shared digitized published reference, not this
-              sample&rsquo;s measurement. Raw files below are verbatim and
-              complete.
+              CA / CV / OCP are this sample&rsquo;s own measurements, thinned at
+              an even stride to plot (the shape is preserved); the CA curve
+              drops its initial charging spike, which is instrument noise. The
+              DPV panel is the shared reference curve digitized from the paper,
+              not this sample&rsquo;s measurement. The raw files below are
+              complete and unedited.
             </p>
           </div>
 

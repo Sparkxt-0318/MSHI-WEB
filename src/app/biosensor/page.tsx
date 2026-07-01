@@ -14,7 +14,7 @@ import { siteConfig } from '@/lib/site-config';
 export const metadata: Metadata = {
   title: 'Biosensor',
   description:
-    'Curated electrochemistry gallery from the published MSHI dataset: real CA, CV, and OCP traces and the MSHI score they collapse into.',
+    'A curated gallery of real electrochemistry from the published MSHI dataset — CA, CV, and OCP traces and the single Microbial Soil Health Index (MSHI) score they fold into.',
 };
 
 const CLASS_ORDER: Classification[] = ['healthy', 'unhealthy', 'saline'];
@@ -43,13 +43,16 @@ export default function BiosensorPage() {
             The centimeter-scale measurement.
           </h1>
           <p className="mt-8 max-w-prose text-lg leading-relaxed text-ink-soft">
-            This is the finest tier of the three-tier soil-carbon framework —
-            below the chamber and the continental atlas. A three-electrode
-            bioelectrochemical cell measures soil microbial activity directly
-            through the current that electrochemically active biofilms
-            (<em>Geobacter</em>-dominated) generate via extracellular electron
-            transfer. Every sample below is a validated run from the published
-            study,{' '}
+            This is the most fine-grained of the project&apos;s three tiers —
+            beneath the meter-scale chamber and the continent-scale atlas. On
+            the lab bench, a three-electrode bioelectrochemical cell (a small
+            rig that can both drive and read an electric current through a
+            sample) measures soil life directly: it captures the current that
+            electroactive bacteria — here, mostly <em>Geobacter</em> — give off
+            as they breathe. These microbes build a living film on the
+            electrode, a biofilm, and hand their electrons to it in a process
+            called extracellular electron transfer. Every sample below is a
+            validated run from the published study,{' '}
             <Link href="/paper" className="link-arrow">
               {siteConfig.paperTitle}
             </Link>
@@ -61,34 +64,38 @@ export default function BiosensorPage() {
               <span className="font-mono text-[0.72rem] uppercase tracking-meta text-accent">
                 CA
               </span>{' '}
-              — chronoamperometry: current over time at a fixed potential,
-              tracking electroactive-biofilm growth and bulk electron-transfer
-              rate.
+              — chronoamperometry: holds the voltage steady and records the
+              current over time, tracking how the electroactive biofilm grows
+              and how fast electrons flow overall.
             </p>
             <p>
               <span className="font-mono text-[0.72rem] uppercase tracking-meta text-bedrock-blue">
                 CV
               </span>{' '}
-              — cyclic voltammetry: the redox fingerprint of the biofilm,
-              separating faradaic biological signal from ohmic abiotic noise.
+              — cyclic voltammetry: sweeps the voltage to read the
+              biofilm&rsquo;s redox fingerprint, separating the true biological
+              signal (faradaic) from the plain electrical resistance of the
+              soil (ohmic, abiotic).
             </p>
             <p>
               <span className="font-mono text-[0.72rem] uppercase tracking-meta text-bedrock-good">
                 OCP
               </span>{' '}
-              — open-circuit potential: the soil&rsquo;s resting
-              electrochemical state with no applied bias (Phase II samples
-              only).
+              — open-circuit potential: the soil&rsquo;s resting electrical
+              state with the power switched off, i.e. no applied voltage
+              (Phase II samples only).
             </p>
           </div>
 
           <p className="mt-6 max-w-prose text-[0.95rem] leading-relaxed text-ink-soft">
-            Differential pulse voltammetry was also used in the study, but it
-            is a peak-measurement technique and no per-sample DPV trace
-            exists in this corpus, so instead of per-sample charts the single
-            reference below is digitized from the author&rsquo;s published
-            DPV trace — marking the OmcZ cytochrome redox peak near
-            &minus;0.13&nbsp;V — with the full analysis in the{' '}
+            The study also used differential pulse voltammetry (DPV), a
+            technique that reads sharp peaks rather than a continuous trace.
+            There is no per-sample DPV curve in this collection, so rather than
+            fabricate one, the single reference curve below is digitized from
+            the author&rsquo;s published DPV result — its peak near
+            &minus;0.13&nbsp;V marks the redox signature of the OmcZ cytochrome,
+            a protein <em>Geobacter</em> uses to pass electrons. The full
+            analysis is in the{' '}
             <Link href="/paper" className="link-arrow">
               paper
             </Link>
@@ -142,12 +149,13 @@ export default function BiosensorPage() {
             <p className="meta-label">Running the model on new data</p>
             <p className="mt-3 max-w-prose text-[0.95rem] leading-relaxed text-ink">
               The traces above are validated results from the published
-              dataset. A clean, reproducible notebook for scoring your own
-              electrochemistry files end-to-end is pending the public release
-              of the MSHI model artifacts (XGBoost + 1D-CNN ensemble and
-              scalers); they are not yet published to the open repository.
-              Until then, the methods and the trained pipeline are described in
-              the{' '}
+              dataset. A clean, reproducible notebook that scores your own
+              electrochemistry files from start to finish is waiting on the
+              public release of the MSHI model files — the XGBoost + 1D-CNN
+              ensemble and its scalers (a decision-tree model paired with a
+              signal-reading neural network). They are not in the open
+              repository yet; until then, the methods and the trained pipeline
+              are laid out in the{' '}
               <Link href="/paper" className="link-arrow">
                 paper
               </Link>

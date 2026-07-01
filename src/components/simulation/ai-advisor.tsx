@@ -108,8 +108,8 @@ function TrainingDataDialog() {
       <DialogContent className="max-w-2xl">
         <DialogTitle>Training corpus · 28 labeled runs</DialogTitle>
         <p className="text-[0.85rem] text-ink-soft">
-          Voltammetric runs (CV / CA) across soil classes, with their reference
-          MSHI label. Illustrative figures for this simulation.
+          CV / CA runs across different soil types, each with its reference MSHI
+          label. Illustrative figures for this simulation.
         </p>
         <div className="mt-2 max-h-[55vh] overflow-y-auto border border-rule">
           <table className="w-full border-collapse text-[0.82rem]">
@@ -156,7 +156,7 @@ export function AiAdvisor({ api }: { api: RedoxSystemApi }) {
             <div>
               <h3 className="font-serif text-xl font-bold text-ink">AI Decision Support System</h3>
               <p className="text-[0.85rem] text-ink-soft">
-                Machine-learning-powered soil remediation recommendations
+                Machine-learning recommendations for fixing degraded soil
               </p>
             </div>
           </div>

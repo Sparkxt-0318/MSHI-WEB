@@ -141,7 +141,7 @@ export const SOIL_CONDITIONS: SoilCondition[] = [
     problem: 'Community well-poised — no active stressor.',
     remediationTitle: 'Maintain Monitoring',
     remediation:
-      'Redox potential sits in the optimal reducing window and the electroactive community is thriving. Hold the 15-second sensing cadence and let the closed loop track natural drift.',
+      'Redox potential sits in the ideal reducing window and the electroactive community is thriving. Keep the 15-second sensing cadence and let the closed loop follow the natural drift.',
     action: 'maintain',
     expected: 'Hold Eh within ±10 mV of −200 mV',
     tone: 'good',
@@ -156,7 +156,7 @@ export const SOIL_CONDITIONS: SoilCondition[] = [
     problem: 'No active microbes — the electroactive community is absent.',
     remediationTitle: 'Inoculate + Nutrient Pulse',
     remediation:
-      'Introduce a Geobacter / Shewanella consortium, deliver a glucose / nutrient pulse, and apply poised-potential electrochemical stimulation to promote electroactive-biofilm (EAB) formation on the working electrode.',
+      'Add a Geobacter / Shewanella mix, feed a glucose / nutrient pulse, and hold a steady voltage to encourage an electroactive biofilm (EAB) to form on the working electrode.',
     action: 'inoculate',
     expected: 'Builds EAB · transfer current 3 → ~28 µA',
     tone: 'bad',
@@ -169,10 +169,10 @@ export const SOIL_CONDITIONS: SoilCondition[] = [
     label: 'Saline-stressed',
     short: 'Saline',
     problem:
-      'High ionic strength denatures proteins and blocks extracellular electron transfer (EET).',
+      'All the dissolved salt denatures proteins and blocks extracellular electron transfer (EET).',
     remediationTitle: 'Freshwater Leaching → Recovery',
     remediation:
-      'Leach with low-salinity water to drop the salt load FIRST, then allow microbial recovery. Do not add more fertilizer — extra ions deepen the osmotic stress. The sensor flags this as salinity, not nutrient deficiency.',
+      'Flush with low-salt water to wash out the salt FIRST, then let the microbes recover. Don’t add fertilizer — more ions only deepen the osmotic stress. The sensor correctly flags this as a salt problem, not a nutrient shortage.',
     action: 'leaching',
     expected: 'EC 6.6 → ~1.6 dS/m · restores EET',
     tone: 'warn',
@@ -187,7 +187,7 @@ export const SOIL_CONDITIONS: SoilCondition[] = [
     problem: 'Cd²⁺ toxicity suppresses the microbial community.',
     remediationTitle: 'Chelation + Electrokinetic Extraction',
     remediation:
-      'Dose a citric-acid chelant to mobilize bound Cd²⁺, then apply an electrokinetic field to physically migrate the chelated ions toward the extraction electrode, lowering bioavailable cadmium.',
+      'Add a citric-acid chelator to loosen the bound Cd²⁺, then switch on an electric field (electrokinetic extraction) to drag the freed ions toward the extraction electrode, lowering the cadmium the microbes are exposed to.',
     action: 'chelation',
     expected: 'Cd 5.4 → ~0.8 mg/kg · lifts toxic suppression',
     tone: 'bad',
@@ -202,7 +202,7 @@ export const SOIL_CONDITIONS: SoilCondition[] = [
     problem: 'Low pH suppresses microbial activity.',
     remediationTitle: 'Liming to pH 6.5–7.5',
     remediation:
-      'Apply agricultural lime to neutralize acidity and bring pH back into the 6.5–7.5 optimal range, relieving the proton stress on the electroactive community.',
+      'Spread agricultural lime to neutralize the acid and bring pH back into the 6.5–7.5 sweet spot, easing the acid stress on the electroactive community.',
     action: 'liming',
     expected: 'pH 4.7 → ~6.8 · re-activates respiration',
     tone: 'warn',
@@ -214,10 +214,10 @@ export const SOIL_CONDITIONS: SoilCondition[] = [
     key: 'compacted',
     label: 'Compacted / waterlogged',
     short: 'Compacted',
-    problem: 'Anaerobic conditions and structural collapse — oxygen is excluded.',
+    problem: 'No oxygen and collapsed structure — air can’t get in.',
     remediationTitle: 'Tillage + Drainage → Restoration',
     remediation:
-      'Physically till to break compaction and improve drainage, re-introducing oxygen and raising Eh out of the over-reduced zone, then follow with biological restoration of the loosened soil.',
+      'Till the soil to break up the compaction and improve drainage, letting oxygen back in and raising Eh out of the over-reduced zone, then rebuild the biology in the loosened soil.',
     action: 'tillage',
     expected: 'O₂ 8 → ~50% · Eh −285 → −200 mV',
     tone: 'bad',

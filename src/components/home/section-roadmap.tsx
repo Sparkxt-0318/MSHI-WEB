@@ -8,17 +8,17 @@ const CARDS = [
   {
     n: '01',
     title: 'Cross-continental MODIS expansion',
-    body: 'MODIS NPP integration is complete. Multi-year MODIS time-series and biome-specific MODIS interactions are queued for paper revision — both should tighten the F+NPP confidence interval and lower the noise floor on biome-stratified transfer.',
+    body: 'The satellite plant-growth data (MODIS NPP) is already wired in. Next up are multi-year MODIS time-series and biome-by-biome MODIS interactions — both should tighten the F+NPP confidence interval and quiet the noise in the biome-by-biome results.',
   },
   {
     n: '02',
-    title: 'First co-located EAB-Rs deployment',
-    body: 'Pilot deployment of the biosensor at SRDB study sites with active chamber Rs, enabling direct sensor-to-flux validation. First pass: a Köppen-D continental forest with high atlas uncertainty, paired with a temperate-C forest where transfer is strong.',
+    title: 'First side-by-side sensor and chamber test',
+    body: 'The first time the biosensor runs right next to a working flux chamber. We would place it at SRDB study sites that already measure chamber Rs (soil respiration), so the sensor’s signal can be checked against the real CO₂ flux. First pairing: a cold, continental Köppen-D forest where the atlas is most uncertain, alongside a temperate Köppen-C forest where the model already transfers well.',
   },
   {
     n: '03',
     title: 'Open data and reproducibility',
-    body: 'All code, model artifacts, predictions, and held-out scoring scripts publicly available. The paper, the atlas, and the biosensor pipeline will share one canonical repository.',
+    body: 'All the code, trained models, predictions, and held-out scoring scripts, made public. The paper, the atlas, and the biosensor pipeline will live in one shared repository.',
   },
 ];
 

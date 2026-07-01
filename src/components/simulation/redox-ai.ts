@@ -159,10 +159,10 @@ export function evaluate(m: RedoxSnapshot): Recommendation {
       title: 'Oxidative Correction',
       priority: 'High',
       confidence: pct(0.86 + (EH_SAFE_LOW - m.eh) / 400),
-      problem: 'Strongly reducing conditions risk methanogenesis and metal mobilization.',
+      problem: 'Very reducing conditions risk methane production and freeing up metals.',
       rationale:
-        'Strongly reducing conditions (Eh < −260 mV) risk methanogenesis and the mobilization of Fe(II)/Mn(II) and associated trace metals. Apply transient oxidative poising (+0.3 V) with brief aeration to raise Eh back into the safe band.',
-      expected: '+45 mV toward −200 mV · suppresses metal mobilization',
+        'Very reducing conditions (Eh below −260 mV) risk methane production (methanogenesis) and can free up iron, manganese, and trace metals (Fe(II)/Mn(II)). Briefly hold the electrode oxidizing (+0.3 V) and let in some air to lift Eh back into the safe range.',
+      expected: '+45 mV toward −200 mV · keeps metals locked down',
       condition: 'healthy',
     };
   }
@@ -173,10 +173,10 @@ export function evaluate(m: RedoxSnapshot): Recommendation {
       title: 'Electron-Donor Amendment',
       priority: 'High',
       confidence: pct(0.82 + (m.eh - EH_SAFE_HIGH) / 400),
-      problem: 'Oxidizing conditions stall the reductive transformation pathway.',
+      problem: 'Oxidizing conditions stall the reduction pathway.',
       rationale:
-        'Oxidizing conditions (Eh > −120 mV) stall reductive transformation. Dose a labile electron donor (acetate) or a biochar electron shuttle to draw Eh down and sustain anaerobic respiration by the electroactive community.',
-      expected: '−35 mV toward −200 mV · restores reductive pathway',
+        'Oxidizing conditions (Eh above −120 mV) stall the reduction reactions. Feed in an easy electron donor (acetate) or a biochar electron shuttle to pull Eh down and keep the electroactive microbes respiring without oxygen.',
+      expected: '−35 mV toward −200 mV · restores the reduction pathway',
       condition: 'healthy',
     };
   }
@@ -189,7 +189,7 @@ export function evaluate(m: RedoxSnapshot): Recommendation {
       confidence: pct(0.8 + (LOW_CURRENT - m.current) / 40),
       problem: 'Depleted electroactive community — low electron-transfer current.',
       rationale:
-        'Low electron-transfer current indicates a depleted electroactive community. Introduce a Geobacter / Shewanella-enriched consortium to rebuild the biofilm and recover extracellular electron transfer.',
+        'A low electron-transfer current means the electroactive community is depleted. Add a mix of Geobacter / Shewanella bacteria to rebuild the biofilm and restore extracellular electron transfer.',
       expected: '+30% transfer current within 2 scans',
       condition: 'healthy',
     };
@@ -203,7 +203,7 @@ export function evaluate(m: RedoxSnapshot): Recommendation {
       confidence: pct(0.62 + dev / 200),
       problem: 'Redox potential has drifted out of the optimal window.',
       rationale:
-        'Eh has drifted out of the optimal window. Apply alternating poised potential (+0.3 / −0.2 V) to stimulate extracellular electron transfer in Geobacter spp., enhancing microbial respiration and restoring reducing conditions.',
+        'Eh has drifted out of the ideal window. Alternate the applied voltage (+0.3 / −0.2 V) to spur extracellular electron transfer in Geobacter, boosting respiration and pulling conditions back toward reducing.',
       expected: '≈ 15 mV toward target · +18% transfer current',
       condition: 'healthy',
     };
@@ -216,7 +216,7 @@ export function evaluate(m: RedoxSnapshot): Recommendation {
     confidence: 92,
     problem: 'Community well-poised — no active stressor.',
     rationale:
-      'Redox potential is within the optimal reducing window (−220 to −180 mV) and the anaerobic community is well-poised. No intervention required; continue 15-second sensing cycles.',
+      'Redox potential is sitting in the ideal reducing window (−220 to −180 mV) and the oxygen-free community is well balanced. No action needed; keep the 15-second sensing cycles running.',
     expected: 'Hold Eh within ±10 mV',
     condition: 'healthy',
   };
@@ -227,7 +227,7 @@ export const MODEL_INFO = [
   {
     key: 'network',
     title: 'Neural Network',
-    desc: '1D-CNN + gradient-boosting ensemble trained on CA/CV voltammetric features.',
+    desc: 'A 1D-CNN (a neural network that reads signals) paired with a gradient-boosting model, trained on features from the CA/CV runs.',
   },
   {
     key: 'training',
