@@ -22,8 +22,10 @@ export function SectionHero() {
 
         {/* Italic subtitle */}
         <p className="subtitle mt-6 max-w-[55ch] sm:mt-8">
-          A three-tier monitoring stack for the second-largest carbon flux on
-          Earth.
+          Everywhere underfoot, soil microbes breathe out carbon dioxide as
+          they feed — a flow of carbon second only to the oceans&rsquo;, and
+          one we still can&apos;t measure well. This project builds three ways
+          to track it, from a bench-top biosensor to a continent-wide map.
         </p>
 
         {/* Quiet author / institution line */}

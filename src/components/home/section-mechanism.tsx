@@ -13,8 +13,7 @@ export function SectionMechanism() {
         <Reveal>
           <SectionLabel number="04" label="Mechanism" />
           <h2 className="section-title mt-6 max-w-[28ch]">
-            Adding more features doesn&apos;t help — soil drivers don&apos;t
-            transfer.
+            Why more data made the map worse — a finding, not a failure.
           </h2>
         </Reveal>
 
@@ -23,15 +22,15 @@ export function SectionMechanism() {
             <div className="relative aspect-[4/3] w-full">
               <Image
                 src="/images/shap_comparison.png"
-                alt="SHAP feature-importance comparison across F, F+NPP, and Full+MODIS configurations — clay, NPP, and bioclim ranks shifting between Asia training and US held-out regimes"
+                alt="Chart comparing which inputs the model relied on (their SHAP importance) across the F, F+NPP, and Full+MODIS setups — clay, NPP, and climate variables change rank between Asia (training) and the US (held-out test)"
                 fill
                 className="object-contain"
               />
             </div>
             <figcaption className="mt-3 text-center text-[0.78rem] italic text-ink-soft">
-              SHAP rank order shifts substantially between Asia and US — the
-              feature set the model leans on at training time is not the
-              feature set that drives Rs in the held-out continent.
+              Which inputs matter most (their SHAP rank) shifts sharply from
+              Asia to the US: what the model leaned on during training is not
+              what actually drives respiration on the other continent.
             </figcaption>
           </div>
         </Reveal>
@@ -39,7 +38,7 @@ export function SectionMechanism() {
         <Reveal delayMs={160}>
           <div className="mx-auto mt-14 max-w-3xl">
             <p className="meta-label text-ink-soft">
-              Three configurations tested for cross-continental transfer
+              Three setups, tested for how well they carry across continents
             </p>
             <table className="mt-3 w-full border border-rule font-sans text-[0.92rem] text-ink">
               <thead className="border-b border-rule bg-cream/60">
@@ -66,7 +65,7 @@ export function SectionMechanism() {
                     [+0.020, +0.212]
                   </td>
                   <td className="px-3 py-2">
-                    Climate alone produces positive transfer.
+                    Climate alone already carries to the other continent.
                   </td>
                 </tr>
                 <tr className="border-b border-rule bg-cream/40">
@@ -79,7 +78,7 @@ export function SectionMechanism() {
                   </td>
                   <td className="px-3 py-2">
                     <span className="font-bold">Best</span> — satellite NPP
-                    captures the biology signal that transfers.
+                    captures the biology that travels.
                   </td>
                 </tr>
                 <tr>
@@ -89,14 +88,14 @@ export function SectionMechanism() {
                     [−0.084, +0.189]
                   </td>
                   <td className="px-3 py-2">
-                    Adding soil features hurts; CI spans zero.
+                    Adding soil features backfires; the interval straddles zero.
                   </td>
                 </tr>
               </tbody>
             </table>
             <p className="mt-3 text-center font-mono text-[0.7rem] text-ink-soft">
-              Full 5-configuration analysis (incl. Köppen-zone
-              stratification) is on the{' '}
+              The full five-setup analysis (including the Köppen climate-zone
+              splits) is on the{' '}
               <Link
                 href="/methods#configurations"
                 className="border-b border-accent text-accent hover:text-ink hover:border-ink"
@@ -112,43 +111,48 @@ export function SectionMechanism() {
           <div className="mx-auto mt-14">
             <div className="body-prose mx-auto">
               <p>
-                The most counter-intuitive result: adding more soil and climate
-                features hurts transfer. Going from{' '}
+                Here is the counter-intuitive part: feeding the model more soil
+                and climate features actually hurt it. Going from{' '}
                 <span className="font-mono text-[0.85em]">F</span> (16 climate
                 + soil features) to{' '}
                 <span className="font-mono text-[0.85em]">Full</span> (24
-                features including engineered ratios) drops US transfer R²
-                back below zero, even though within-Asia spatial-block CV
-                improves. The mechanism is that engineered features amplify
-                the regional fingerprint of Asian soils — exactly the signal
-                that does not generalize.
+                features including engineered ratios) pushed US transfer R²
+                back below zero — even as the score improved inside Asia (its
+                within-Asia spatial-block CV). The extra features let the model
+                memorize the regional fingerprint of Asian soils, and that
+                fingerprint is exactly what doesn&apos;t carry to another
+                continent. In machine-learning terms, it overfit.
               </p>
               <p>
-                Clay illustrates the problem cleanly. In Asia, clay correlates
-                with annual Rs at ρ = +0.302 (more clay, more respiration —
-                consistent with higher microbial substrate retention in
-                temperate-humid Asian soils). In the US held-out set, that
-                correlation flips to ρ = −0.048 (effectively zero, sign-
-                inverted). A model that has learned a strong clay → Rs prior
-                from Asia will systematically over-predict US clay-rich sites.
+                Clay shows the trap cleanly. In Asia, more clay goes with more
+                respiration — a correlation of ρ = +0.302 — because clay-rich,
+                humid Asian soils hold on to more of the food microbes live on.
+                In the held-out US soils that relationship vanishes and even
+                reverses (ρ = −0.048, essentially zero, sign-inverted). So a
+                model that learned &ldquo;more clay means more respiration&rdquo;
+                from Asia will systematically over-predict America&apos;s
+                clay-rich sites.
               </p>
               <p>
-                MODIS NPP fixes this not because NPP is some kind of universal
-                Rs driver, but because it captures the contemporaneous
-                productivity signal that does transfer: a forest growing
-                vigorously this year respires accordingly, regardless of
-                whether it sits on Mongolian loess or Iowan mollisol. Once NPP
-                is in the feature set, it absorbs rank-1 SHAP importance in
-                both regions and the soil-ratio features lose their
-                regional-fingerprint pull.
+                Satellite plant growth (MODIS NPP) rescues the model — not
+                because it is some universal driver of respiration, but because
+                it captures something that does travel: how vigorously the land
+                is growing right now. A forest thriving this year respires like
+                a thriving forest, whether it sits on Mongolian loess or Iowan
+                mollisol — two utterly different soils. Add NPP and it becomes
+                the model&apos;s single most important input (its rank-1 SHAP
+                feature) in both regions, while the engineered soil ratios lose
+                their regional-fingerprint grip.
               </p>
               <p>
-                The implication for monitoring is concrete. Where the
-                kilometer tier is most likely to fail — high-clay continental
-                soils, biome boundaries, water-limited grasslands — is exactly
-                where the centimeter tier would have the highest scientific
-                value. The biosensor doesn&apos;t replace the atlas; it
-                ground-truths the atlas where the atlas can&apos;t see.
+                The takeaway for monitoring is concrete — and it is the whole
+                reason for the hands-on sensor. The satellite map tells you
+                where to look, not what is actually happening in the soil. Where
+                the kilometer-scale map is most likely to be wrong — high-clay
+                continental soils, the edges between biomes, water-starved
+                grasslands — is exactly where the centimeter-scale biosensor is
+                worth the most. The biosensor doesn&apos;t replace the atlas; it
+                checks the atlas on the ground, where the atlas can&apos;t see.
               </p>
             </div>
           </div>

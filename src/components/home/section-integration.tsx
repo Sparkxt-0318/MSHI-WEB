@@ -21,15 +21,15 @@ export function SectionIntegration() {
             <div className="relative aspect-[16/9] w-full">
               <Image
                 src="/images/methodology_evolution_panel.png"
-                alt="Methodology evolution panel: F → F+NPP → Full+MODIS with transfer R² and CI shifts annotated"
+                alt="Panel tracing the model's evolution — F → F+NPP → Full+MODIS — with the shifts in transfer R² and confidence interval annotated at each step"
                 fill
                 className="object-contain"
               />
             </div>
             <figcaption className="mt-3 text-center text-[0.78rem] italic text-ink-soft">
-              The deployable monitoring stack: continental atlas where models
-              transfer, biosensors where they don&apos;t, chamber data as
-              shared ground-truth.
+              The monitoring stack in practice: the continental atlas where the
+              model travels well, hands-on biosensors where it doesn&apos;t, and
+              chamber data as the shared ground truth both rely on.
             </figcaption>
           </div>
         </Reveal>
@@ -38,27 +38,32 @@ export function SectionIntegration() {
           <Reveal className="md:col-span-7" delayMs={200}>
             <div className="body-prose">
               <p>
-                The atlas is not a finished product; it is an uncertainty map.
-                Köppen-Geiger stratification of the prediction error reveals a
-                consistent pattern: transfer R² is highest in temperate
-                Köppen&nbsp;C climates that dominate both the Asian training
-                set and the US test set, and collapses toward zero in
-                continental Köppen&nbsp;D zones — large parts of the northern
-                US and Canada — where Asian training data thins out.
+                The atlas is not a finished product so much as a map of its own
+                uncertainty. Break the errors down by climate zone — using the
+                standard Köppen-Geiger system, which sorts the world into
+                climate types — and a clear pattern appears: transfer R² is
+                highest in the temperate Köppen&nbsp;C climates that dominate
+                both the Asian training set and the US test set, and it
+                collapses toward zero in the colder, continental
+                Köppen&nbsp;D zones — much of the northern US and Canada — where
+                Asian training data runs thin.
               </p>
               <p>
-                IGBP biome stratification tells a complementary story.
-                Forest biomes (temperate broadleaf, mixed, evergreen needle)
-                transfer reasonably; cropland and grassland biomes transfer
-                worse, with prediction error scaling roughly with the
-                cross-continental shift in management intensity.
+                Sort the same errors by vegetation type — the IGBP land-cover
+                classes — and the story rhymes. Forest biomes (temperate
+                broadleaf, mixed, evergreen needle) transfer reasonably well;
+                croplands and grasslands do worse, with the error growing
+                roughly in step with how differently the land is farmed on each
+                continent.
               </p>
               <p>
-                Both Köppen and IGBP stratifications fail to recover transfer
-                when used as additional model features — the regional
-                fingerprint is locked at scales the model cannot disentangle
-                from the climate signal. This is precisely the regime where
-                the centimeter-scale biosensor adds independent information.
+                Crucially, feeding those same Köppen and IGBP labels back to the
+                model as extra inputs doesn&apos;t rescue the transfer: the
+                regional fingerprint is baked in at a level the model
+                can&apos;t separate from the climate signal. That is precisely
+                the gap the centimeter-scale biosensor fills — it brings
+                independent, on-the-ground information the satellites simply do
+                not carry.
               </p>
             </div>
           </Reveal>
@@ -76,31 +81,31 @@ export function SectionIntegration() {
                   <span className="font-mono text-[0.7rem] text-accent">01</span>
                   <span>
                     <strong className="font-semibold">Köppen D continental</strong> —
-                    largest model uncertainty; under-represented in Asian
-                    training set.
+                    where the map is least certain and Asian training data is
+                    thinnest.
                   </span>
                 </li>
                 <li className="flex gap-3">
                   <span className="font-mono text-[0.7rem] text-accent">02</span>
                   <span>
                     <strong className="font-semibold">Forest biome boundaries</strong> —
-                    where IGBP class probability is mixed and the model has
-                    to choose.
+                    where the vegetation type (IGBP class) is ambiguous and the
+                    model is forced to guess.
                   </span>
                 </li>
                 <li className="flex gap-3">
                   <span className="font-mono text-[0.7rem] text-accent">03</span>
                   <span>
                     <strong className="font-semibold">Managed cropland</strong> —
-                    where the regional management fingerprint dominates and
-                    SoilGrids alone cannot resolve.
+                    where local farming practices dominate and soil maps
+                    (SoilGrids) alone can&apos;t resolve them.
                   </span>
                 </li>
                 <li className="flex gap-3">
                   <span className="font-mono text-[0.7rem] text-accent">04</span>
                   <span>
                     <strong className="font-semibold">High-clay soils</strong> —
-                    the sign-flip failure mode quantified in section 04.
+                    the clay sign-flip failure mode measured in section 04.
                   </span>
                 </li>
               </ul>

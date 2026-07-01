@@ -16,7 +16,7 @@ const SimulationStage = dynamic(
 export const metadata: Metadata = {
   title: 'Simulation',
   description:
-    'An interactive 3D time-lapse of the soil biosensor: watch a microbial biofilm colonize the electrode, electrons flow, and the Microbial Soil Health Index emerge across healthy, salt-stressed and degraded soils.',
+    'An interactive 3D time-lapse of the soil biosensor: watch a film of microbes (a biofilm) spread over the electrode, electrons flow, and a Microbial Soil Health Index emerge for healthy, salt-stressed, and degraded soils.',
 };
 
 export default function SimulationPage() {
@@ -30,12 +30,13 @@ export default function SimulationPage() {
             Watch the measurement come alive.
           </h1>
           <p className="mt-8 max-w-prose text-lg leading-relaxed text-ink-soft">
-            The soil biosensor, brought to life — and put to work. First, a live
-            operator console senses soil redox in real time while an AI advisor
-            proposes soil-science-backed interventions. Then, at the foot of the
-            page, a fast-forward 3D time-lapse shows the biology those readings
-            come from: electroactive bacteria colonizing the electrode across
-            three soils.
+            The soil biosensor, brought to life — and put to work. Up top, a
+            live operator console reads the soil&rsquo;s redox state (its
+            electrical push-and-pull) in real time, while an AI advisor suggests
+            fixes grounded in soil science. At the foot of the page, a
+            fast-forward 3D time-lapse shows the biology behind those readings:
+            electroactive bacteria — microbes that give off electrons as they
+            breathe — colonizing the electrode across three soils.
           </p>
         </div>
       </section>
@@ -55,11 +56,11 @@ export default function SimulationPage() {
             The science behind the readings.
           </h2>
           <p className="mt-6 max-w-prose text-[1rem] leading-relaxed text-ink-soft">
-            A simplified, sped-up illustration of the three-electrode cell:
-            electroactive bacteria colonize the working electrode, stream
+            A simplified, sped-up look at the three-electrode cell:
+            electroactive bacteria settle on the working electrode, pour
             electrons into the circuit, and drive the current that becomes a{' '}
             <span className="text-ink">Microbial Soil Health Index</span> — three
-            soils side by side.
+            soils, side by side.
           </p>
           <p className="mt-4 max-w-prose font-mono text-[0.78rem] leading-relaxed text-ink-soft">
             Drag the scene to look around the electrodes · play, pause and

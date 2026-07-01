@@ -64,7 +64,7 @@ export function CarbonFluxChart() {
                 fontFamily: 'Calibri, sans-serif',
                 fontSize: 12,
               }}
-              formatter={(value: number) => [`${value} Pg C / yr`, 'Annual flux']}
+              formatter={(value: number) => [`${value} Pg C / yr`, 'Annual flow']}
             />
             <Bar dataKey="value" maxBarSize={68}>
               {data.map((entry) => (
@@ -86,9 +86,10 @@ export function CarbonFluxChart() {
         </ResponsiveContainer>
       </div>
       <p className="mt-4 max-w-prose text-[0.78rem] italic text-ink-soft">
-        Annual carbon flux comparison, Pg C yr⁻¹. Soil respiration is highlighted
-        in deep red. Sources: Friedlingstein et&nbsp;al. 2022 (fossil),
-        Beer et&nbsp;al. 2010 (GPP), Bond-Lamberty &amp; Thomson 2018 (Rs).
+        Annual carbon flows compared, in Pg C yr⁻¹ (petagrams of carbon per
+        year). Soil respiration is highlighted in deep red. Sources:
+        Friedlingstein et&nbsp;al. 2022 (fossil), Beer et&nbsp;al. 2010 (GPP),
+        Bond-Lamberty &amp; Thomson 2018 (Rs).
       </p>
     </div>
   );

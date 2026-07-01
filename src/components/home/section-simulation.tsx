@@ -23,15 +23,17 @@ export function SectionSimulation() {
           <Reveal className="md:col-span-5" delayMs={80}>
             <div className="text-[1rem] leading-relaxed text-ink">
               <p>
-                An interactive, 30-second time-lapse of a multi-day
-                electrochemistry trial. A microbial biofilm colonizes the
-                electrode, electrons stream into the circuit, and a{' '}
+                Press play and a multi-day experiment unfolds in about 30
+                seconds. A film of microbes — a biofilm — spreads over the
+                electrode, the electrons they shed stream into the circuit, and
+                a{' '}
                 <span className="font-semibold">Microbial Soil Health Index</span>{' '}
-                emerges.
+                takes shape in real time.
               </p>
               <p className="mt-4 text-ink-soft">
-                Three soils race side by side in 3D — spin the scene, fast-forward,
-                and watch healthy soil pull away from the stressed and degraded ones.
+                Three soils run the race side by side in 3D — spin the scene,
+                jump ahead, and watch the healthy soil pull away from the
+                stressed and degraded ones.
               </p>
             </div>
 
@@ -80,7 +82,7 @@ export function SectionSimulation() {
             </Link>
             <p className="mt-3 text-[0.78rem] italic text-ink-soft">
               A simplified, sped-up illustration of the centimeter-scale
-              measurement — interactive on the full page.
+              measurement — the full version is interactive on its own page.
             </p>
           </Reveal>
         </div>

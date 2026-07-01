@@ -934,8 +934,8 @@ export function AtlasMap() {
               </p>
             ) : (
               <p className="hidden font-mono text-[0.6rem] leading-snug text-ink-soft sm:block">
-                Powered by Photon · OSM. Non-Asia results are transfer
-                predictions (flagged in the panel).
+                Powered by Photon · OSM. Anything outside Asia is a transfer
+                prediction (flagged in the panel).
               </p>
             )}
           </div>
@@ -965,18 +965,19 @@ export function AtlasMap() {
               })}
             </div>
             <p className="mt-1 hidden max-w-[20rem] font-mono text-[0.6rem] leading-snug text-ink-soft sm:block">
-              Toggle between F+NPP (best transfer) and Full+MODIS (more
-              features, worse transfer). Click any cell for real per-cell
-              predictions.
+              Switch between F+NPP (the best-transferring setup) and Full+MODIS
+              (more features, worse transfer). Click any cell for its own
+              prediction.
             </p>
             <p className="mt-2 hidden max-w-[20rem] border-t border-rule pt-2 font-mono text-[0.6rem] leading-snug text-ink-soft sm:block">
-              <span className="font-semibold text-ink">Asia</span> = training
-              region (raster).{' '}
+              <span className="font-semibold text-ink">Asia</span> is the
+              training region (the shaded map).{' '}
               <span className="font-semibold text-bedrock-warn">
-                Coloured points
+                Coloured dots
               </span>{' '}
-              elsewhere are transfer cells — extrapolations, flagged in each
-              panel. Regions with no MODIS data (e.g. South America) are absent.
+              elsewhere are transfer cells — the model reaching beyond where it
+              learned, flagged in every panel. Places with no MODIS data (e.g.
+              South America) simply aren&apos;t shown.
             </p>
           </div>
 
@@ -989,7 +990,7 @@ export function AtlasMap() {
             <div className="pointer-events-auto absolute bottom-3 left-3 right-3 z-20 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border border-rule bg-paper/95 px-4 py-3 backdrop-blur-sm sm:bottom-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:flex-nowrap sm:gap-6 sm:px-5">
               <div>
                 <p className="meta-label flex items-center gap-1 text-ink-soft">
-                  Rs anomaly · {activeOverlay} ·{' '}
+                  Respiration anomaly · {activeOverlay} ·{' '}
                   {modelMeta
                     ? `n=${activeOverlay === 'Full+MODIS' ? modelMeta.fullmodis.n : modelMeta.fnpp.n}`
                     : '—'}
@@ -1073,7 +1074,7 @@ export function AtlasMap() {
               type="button"
               onClick={() => setBarVisible(true)}
               aria-label="Show legend bar"
-              title="Show the Rs-anomaly legend & controls"
+              title="Show the respiration-anomaly legend & controls"
               className="pointer-events-auto absolute bottom-4 left-4 z-20 inline-flex animate-fade-in items-center gap-1.5 border border-rule bg-paper/95 px-3 py-2 font-mono text-[0.65rem] uppercase tracking-meta text-ink-soft backdrop-blur-sm transition-colors hover:border-ink hover:text-ink"
             >
               <Eye className="h-3.5 w-3.5" />
@@ -1110,7 +1111,7 @@ function AnomalyInfoModal({ onClose }: { onClose: () => void }) {
       data-mshi-info-modal
       role="dialog"
       aria-modal="true"
-      aria-label="About the Rs anomaly metric"
+      aria-label="About the respiration-anomaly metric"
       className="absolute inset-0 z-40 flex items-center justify-center bg-ink/40 p-4 sm:p-6"
       onPointerDown={(ev) => {
         // Click on the backdrop closes; clicks inside the card stop here.
@@ -1132,22 +1133,19 @@ function AnomalyInfoModal({ onClose }: { onClose: () => void }) {
         <div className="space-y-3 px-5 py-4 text-[0.92rem] leading-relaxed text-ink">
           <p>
             <span className="font-serif font-bold">What this map shows:</span>{' '}
-            an anomaly ratio between the model&apos;s prediction and a
-            climate baseline. Values near 1.0 mean the model agrees with what
-            climate alone would predict — biology isn&apos;t adding extra
-            information. Values below 1.0 mean the biology signal (from
-            MODIS NPP) suggests less microbial activity than climate alone
-            would expect. Values above 1.0 mean the biology signal suggests
-            more.
+            the anomaly is the model&apos;s prediction divided by a plain
+            climate baseline. Near 1.0, the model agrees with what climate alone
+            would predict — biology adds nothing extra. Below 1.0, the biology
+            signal (from MODIS NPP, a satellite measure of plant growth) points
+            to less microbial activity than climate alone would expect. Above
+            1.0, more.
           </p>
           <p>
             <span className="font-serif font-bold">Example:</span> Mongolia
-            at anomaly = 0.78 means the model predicts ~22 % less microbial
-            activity than climate would predict alone, because vegetation
-            productivity (NPP) is low. The Indo-Gangetic Plain at
-            anomaly = 1.18 means ~18 % more activity than climate would
-            predict, because intensive agriculture creates elevated
-            productivity.
+            at anomaly = 0.78 means the model expects ~22 % less microbial
+            activity than climate alone would suggest, because plant growth
+            (NPP) there is low. The Indo-Gangetic Plain at anomaly = 1.18 means
+            ~18 % more, because intensive farming keeps productivity high.
           </p>
         </div>
       </div>

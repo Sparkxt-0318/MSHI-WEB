@@ -33,11 +33,12 @@ export function LiveSystem() {
       <h2 className="section-title mt-4 max-w-[24ch]">The closed loop, running live.</h2>
       <p className="mt-6 max-w-prose text-[1rem] leading-relaxed text-ink-soft">
         A simulated operator console for the bioelectrochemical remediation rig. Press
-        <span className="text-ink"> Start</span> and it senses soil redox potential in real
-        time while an AI advisor proposes soil-science-backed interventions. Load a degraded
-        soil — saline, heavy-metal, acidic, compacted or biologically sterile — and watch the
-        AI re-diagnose the primary problem and adapt its remediation. Switch scenarios anytime,
-        execute the recommendation, and watch the reading move back toward the healthy window.
+        <span className="text-ink"> Start</span> and it reads the soil&rsquo;s redox potential
+        (its electrical push-and-pull) in real time, while an AI advisor suggests fixes grounded
+        in soil science. Load a degraded soil — salty, heavy-metal, acidic, compacted, or
+        biologically dead — and watch the AI re-diagnose the main problem and change its plan.
+        Switch scenarios anytime, run the recommendation, and watch the reading move back toward
+        the healthy window.
       </p>
 
       {/* experiment control bar */}

@@ -17,7 +17,7 @@ export function SectionAtlasTeaser() {
         <Reveal>
           <SectionLabel number="03" label="The Atlas" />
           <h2 className="section-title mt-6 max-w-[24ch]">
-            Cross-continental ML, validated on a held-out continent.
+            A soil-carbon map, put to the test on a continent it never saw.
           </h2>
         </Reveal>
 
@@ -26,7 +26,7 @@ export function SectionAtlasTeaser() {
             <figure className="overflow-hidden border border-rule bg-paper shadow-sm">
               <Image
                 src={HERO_IMAGE}
-                alt="Asia soil respiration anomaly composite — F+NPP configuration, ~5 km resolution"
+                alt="Map of Asia shading where soil respiration runs above or below its climate-expected baseline — the F+NPP model at ~5 km resolution"
                 width={4906}
                 height={2850}
                 className="h-auto w-full"
@@ -49,19 +49,21 @@ export function SectionAtlasTeaser() {
               </p>
 
               <p className="mt-4 font-serif text-base italic text-paper/80">
-                Climate + MODIS NPP, n_train ={' '}
-                {siteConfig.headline.nTrainAsia} Asian sites, held-out test on{' '}
-                {siteConfig.headline.nTestUS} US sites.
+                Trained on {siteConfig.headline.nTrainAsia} Asian sites using
+                climate plus MODIS NPP, then tested on{' '}
+                {siteConfig.headline.nTestUS} US sites it never saw.
               </p>
 
               <p className="mt-5 text-[0.92rem] leading-relaxed text-paper/85">
-                95% bootstrap CI{' '}
+                Its 95% bootstrap confidence interval{' '}
                 <span className="whitespace-nowrap">
                   [+{siteConfig.headline.ciLow.toFixed(3)},
                   &nbsp;+{siteConfig.headline.ciHigh.toFixed(3)}]
                 </span>{' '}
-                excludes zero. NPP is rank-1 SHAP driver. Best of any tested
-                configuration.
+                stays above zero, and satellite plant growth (MODIS NPP) is the
+                input the model leans on most — its top-ranked SHAP driver (the
+                measure of which inputs move a prediction). Best of any
+                configuration tested.
               </p>
 
               <Link
@@ -75,8 +77,11 @@ export function SectionAtlasTeaser() {
         </div>
 
         <p className="meta-text mt-8">
-          Anomaly = predicted Rs ÷ predicted Rs at climatological mean. Values
-          &gt; 1 indicate above-average flux; values &lt; 1 indicate below.
+          The MSHI Atlas is this project&apos;s continent-scale prediction of
+          soil respiration. On the map, the anomaly is the predicted Rs divided
+          by what you&apos;d expect at the average climate (predicted Rs ÷
+          predicted Rs at climatological mean): values above 1 mean more soil
+          breathing than climate alone predicts; below 1, less.
         </p>
       </div>
     </section>

@@ -7,7 +7,7 @@ import { SiteFooter } from '@/components/site/site-footer';
 export const metadata: Metadata = {
   title: 'Methods',
   description:
-    'Data sources, feature engineering, model architecture, validation methodology, and sample-size notes for the MSHI-Geo continental ML upscaling.',
+    'How the MSHI-Geo continental map is built: where the data comes from, which inputs the model uses, the model itself, how it was validated, and the sample-size caveats.',
 };
 
 const FEATURE_GROUPS = [
@@ -50,9 +50,11 @@ export default function MethodsPage() {
           <SectionLabel number="·" label="Methods" />
           <h1 className="display-title mt-6 max-w-[16ch]">Methods.</h1>
           <p className="mt-8 max-w-prose text-lg leading-relaxed text-ink-soft">
-            How the MSHI-Geo continental atlas is built. Data sources,
-            features, model, and the cross-continental validation that lets
-            us report a held-out R² rather than an in-sample one.
+            How the MSHI-Geo continental atlas is built: where the data comes
+            from, which inputs the model uses, the model itself, and the
+            cross-continental test that lets us report a held-out R² (scored on
+            data the model never saw) rather than an in-sample one (scored on
+            the very data it trained on).
           </p>
         </div>
       </section>
@@ -65,8 +67,8 @@ export default function MethodsPage() {
           </h2>
           <div className="body-prose mt-5">
             <p>
-              All training and evaluation chamber data are drawn from two
-              public databases:{' '}
+              All the chamber measurements used for training and testing come
+              from two public databases:{' '}
               <Link
                 href="https://github.com/bpbond/srdb"
                 className="link-arrow"
@@ -75,7 +77,7 @@ export default function MethodsPage() {
               >
                 SRDB v5
               </Link>{' '}
-              (the Soil Respiration Database, Bond-Lamberty &amp; Thomson
+              (the Soil Respiration Database; Bond-Lamberty &amp; Thomson
               2018) and{' '}
               <Link
                 href="https://github.com/bpbond/cosore"
@@ -85,12 +87,14 @@ export default function MethodsPage() {
               >
                 COSORE
               </Link>{' '}
-              (a continuous Rs database, Bond-Lamberty et&nbsp;al. 2020).
-              Annual Rs values are extracted, harmonized to gC m⁻² yr⁻¹, and
-              filtered to sites with at least one full year of measurement.
+              (a database of continuous soil-respiration records; Bond-Lamberty
+              et&nbsp;al. 2020). We pull out the annual respiration (Rs) values,
+              convert them all to the same units (gC m⁻² yr⁻¹), and keep only
+              sites with at least one full year of measurement.
             </p>
             <p>
-              Predictor rasters are sampled at each chamber site location:
+              At each of those sites we also read off a stack of map layers as
+              the model&apos;s inputs:
               <Link
                 href="https://www.isric.org/explore/soilgrids"
                 className="link-arrow ml-1"
@@ -99,7 +103,7 @@ export default function MethodsPage() {
               >
                 SoilGrids 2.0
               </Link>{' '}
-              for soil physicochemistry,{' '}
+              for the soil&apos;s physical and chemical properties,{' '}
               <Link
                 href="https://www.worldclim.org/data/worldclim21.html"
                 className="link-arrow"
@@ -108,7 +112,7 @@ export default function MethodsPage() {
               >
                 WorldClim 2.1
               </Link>{' '}
-              for bioclimatic variables, and four{' '}
+              for climate, and four continuous{' '}
               <Link
                 href="https://lpdaac.usgs.gov/products/mod17a3hgfv006/"
                 className="link-arrow"
@@ -117,18 +121,19 @@ export default function MethodsPage() {
               >
                 MODIS
               </Link>{' '}
-              continuous fields including the rank-1 SHAP feature: NPP from
-              MOD17A3HGF.
+              satellite layers — including the model&apos;s single most
+              important input (its rank-1 SHAP feature), plant productivity
+              (NPP) from MOD17A3HGF.
             </p>
           </div>
 
           <Callout label="Sample size">
-            Asia training: <strong>n = 600</strong> for the F (climate +
-            soils) configuration; <strong>n = 463</strong> for the F+NPP
-            configuration after dropping cells where MODIS NPP is NaN
-            (24% of training cells, predominantly bare ground / desert).
-            US held-out test: <strong>n = 274</strong> (intersection of
-            SRDB+COSORE coverage with the F+NPP non-NaN mask).
+            Asia training: <strong>n = 600</strong> for the F setup (climate +
+            soils); <strong>n = 463</strong> for the F+NPP setup, once we drop
+            the cells where the satellite NPP value is missing (NaN) — 24% of
+            training cells, mostly bare ground and desert. US held-out test:{' '}
+            <strong>n = 274</strong> (the SRDB+COSORE sites that also have a
+            valid F+NPP value).
           </Callout>
 
           {/* Features */}
@@ -136,9 +141,9 @@ export default function MethodsPage() {
             Feature engineering
           </h2>
           <p className="body-prose mt-5">
-            The full feature set comprises 25 columns across five groups.
-            The headline F+NPP configuration uses 17: the 8 SoilGrids
-            soil features, the 8 WorldClim bioclim features, and MODIS NPP.
+            The full input set is 25 columns across five groups. The headline
+            F+NPP setup uses 17 of them: the 8 SoilGrids soil features, the 8
+            WorldClim climate (bioclim) features, and MODIS NPP.
           </p>
           <ul className="mt-6 space-y-3 border-y border-rule py-6">
             {FEATURE_GROUPS.map((g) => (
@@ -162,29 +167,31 @@ export default function MethodsPage() {
           </h2>
           <div className="body-prose mt-5">
             <p>
-              XGBoost regressor, gradient-boosted decision trees on tabular
-              features. Hyperparameters are swept on each spatial-block CV
-              fold independently and the best configuration retained for
-              the held-out US evaluation. Final hyperparameters fall in a
-              standard regularized regime — max_depth 5–7, learning rate
-              0.03–0.06, n_estimators 400–1200 — selected by within-Asia
-              spatial-block CV mean R².
+              The model is an XGBoost regressor — gradient-boosted decision
+              trees, a standard workhorse for table-shaped data. Its settings
+              (hyperparameters) are tuned separately on each spatial-block
+              cross-validation fold, and the best combination is carried
+              forward to the held-out US test. The final settings land in an
+              ordinary, well-regularized range — max_depth 5–7, learning rate
+              0.03–0.06, n_estimators 400–1200 — chosen by the mean R² across
+              the within-Asia spatial-block folds.
             </p>
             <p>
-              SHAP (TreeExplainer) is used for the feature attribution
-              analysis on the homepage. SHAP values are computed
-              independently per held-out fold and aggregated by mean
-              absolute value to produce the rank ordering reported.
+              To see which inputs the model actually leans on, we use SHAP (with
+              the TreeExplainer algorithm) — a standard way to attribute a
+              prediction to its inputs. SHAP values are computed separately for
+              each held-out fold and averaged by absolute value to give the
+              rankings shown on the homepage.
             </p>
           </div>
 
           <Callout label="Why XGBoost">
-            We tested random forests, gradient-boosted trees, and a small
-            MLP. XGBoost dominated within-Asia spatial-block CV at every
-            sample size we tried, with the gap widening at smaller n. The
-            absolute transfer R² was robust to the specific tree-ensemble
-            choice — what mattered was the <em>feature set</em>, not the
-            learner.
+            We tried random forests, gradient-boosted trees, and a small neural
+            network (an MLP). XGBoost won the within-Asia spatial-block
+            cross-validation at every sample size we tested, and its lead grew
+            as the sample shrank. The transfer R² itself barely moved when we
+            swapped one tree-based model for another — what mattered was the
+            choice of <em>inputs</em>, not the learner.
           </Callout>
 
           {/* Validation */}
@@ -197,27 +204,30 @@ export default function MethodsPage() {
             </p>
             <ol className="ml-6 list-decimal space-y-3">
               <li>
-                <strong>Within-Asia spatial-block CV</strong> with 5° latitude
-                bands — 5 folds, no chamber site appears in both train and
-                test of any fold. This protects against the spatial-leak
-                artifact that inflates conventional random-fold CV on
-                geographic data.
+                <strong>Within-Asia spatial-block cross-validation</strong>{' '}
+                using 5° latitude bands — 5 folds, and no chamber site ever
+                appears in both the training and test halves of a fold. This
+                guards against a subtle trap (spatial leakage) that makes
+                ordinary random-split cross-validation look better than it
+                should on geographic data.
               </li>
               <li>
-                <strong>Asia → US held-out transfer</strong>. The model
-                trained on the full Asian training set is applied to the
-                274 US sites. R² and RMSE are computed against held-out
-                chamber Rs. The 95% confidence interval on the transfer R²
-                is computed by 2 000-iteration bootstrap resampling of the
-                US site set with replacement.
+                <strong>Asia → US held-out transfer</strong>. The model,
+                trained on the full Asian set, is then turned loose on the
+                274 US sites it has never seen. We score its predictions against
+                the real chamber measurements (R² and RMSE — root-mean-square
+                error), and put a 95% confidence interval on the transfer R² by
+                bootstrap resampling — drawing the US sites at random, with
+                replacement, 2 000 times.
               </li>
             </ol>
             <p>
               The headline F+NPP result — R² = +0.145, 95% CI [+0.026,
-              +0.241] — is reported from this second layer. The CI
-              excludes zero, which is the testable claim: <em>the
-              Asia-trained F+NPP model contains predictive information
-              about US soil respiration beyond the climatological mean.</em>
+              +0.241] — comes from this second layer. Because that interval
+              sits entirely above zero, we can make a real, testable claim:{' '}
+              <em>the Asia-trained F+NPP model carries genuine predictive
+              information about US soil respiration, beyond what the average
+              climate alone would tell you.</em>
             </p>
           </div>
 
@@ -229,10 +239,11 @@ export default function MethodsPage() {
           </h2>
           <div className="body-prose mt-5">
             <p>
-              Cross-continental transfer was tested in five model
-              configurations. F+NPP achieves the best held-out US validation
-              R², while configurations with more soil features or stratified
-              by climate zone produce CIs that span or cross zero.
+              We tested how well five different setups carry across continents.
+              F+NPP gives the best held-out US R²; setups with more soil
+              features, or split by climate zone, produce confidence intervals
+              that touch or cross zero — results you can&apos;t tell apart from
+              no skill at all.
             </p>
           </div>
           <div className="mt-6 overflow-x-auto">
@@ -265,7 +276,7 @@ export default function MethodsPage() {
                   </td>
                   <td className="px-3 py-2 text-right font-mono text-[0.85rem]">600</td>
                   <td className="px-3 py-2">
-                    Climate features alone produce positive transfer.
+                    Climate alone already carries across continents.
                   </td>
                 </tr>
                 <tr className="border-b border-rule bg-cream/40">
@@ -278,7 +289,8 @@ export default function MethodsPage() {
                   </td>
                   <td className="px-3 py-2 text-right font-mono text-[0.85rem]">463</td>
                   <td className="px-3 py-2">
-                    Best transfer; MODIS NPP is rank-1 SHAP driver.
+                    Best transfer; satellite NPP (MODIS) is the top-ranked SHAP
+                    driver.
                   </td>
                 </tr>
                 <tr className="border-b border-rule">
@@ -289,7 +301,7 @@ export default function MethodsPage() {
                   </td>
                   <td className="px-3 py-2 text-right font-mono text-[0.85rem]">463</td>
                   <td className="px-3 py-2">
-                    More features hurt transfer; CI spans zero.
+                    More features hurt; the interval spans zero.
                   </td>
                 </tr>
                 <tr className="border-b border-rule">
@@ -300,7 +312,8 @@ export default function MethodsPage() {
                   </td>
                   <td className="px-3 py-2 text-right font-mono text-[0.85rem]">247</td>
                   <td className="px-3 py-2">
-                    Stratification fails; CI almost entirely below zero.
+                    Splitting by climate zone fails; the interval is almost
+                    entirely below zero.
                   </td>
                 </tr>
                 <tr>
@@ -311,7 +324,8 @@ export default function MethodsPage() {
                   </td>
                   <td className="px-3 py-2 text-right font-mono text-[0.85rem]">244</td>
                   <td className="px-3 py-2">
-                    Stratification fails differently; CI fully below zero.
+                    Splitting by climate zone fails differently; the interval is
+                    entirely below zero.
                   </td>
                 </tr>
               </tbody>
@@ -319,16 +333,16 @@ export default function MethodsPage() {
           </div>
           <div className="body-prose mt-6">
             <p>
-              These five configurations together suggest a mechanistic rather
-              than statistical limit on cross-continental transfer. Adding
-              features hurts (Full+MODIS) rather than helps, indicating that
-              more data does not solve the problem. Stratifying by Köppen
-              zone fails in two independent climate categories, suggesting
-              the problem is not climate-driven but rooted in regionally
-              specific soil and biological factors. F+NPP succeeds where
-              others fail because MODIS NPP captures a biological signal
-              that transfers across continents, where soil features and
-              climate-only stratification do not.
+              Taken together, the five setups point to a real-world limit on
+              cross-continental transfer, not just a statistical one. Adding
+              features (Full+MODIS) hurts rather than helps, so the fix
+              isn&apos;t simply more data. Splitting by Köppen climate zone
+              fails in two separate climate categories, so the problem
+              isn&apos;t really about climate — it is rooted in soil and biology
+              specific to each region. F+NPP succeeds where the others fail
+              because MODIS NPP captures a biological signal that does travel
+              between continents, while the soil features and climate-only
+              splits do not.
             </p>
           </div>
 
@@ -336,10 +350,10 @@ export default function MethodsPage() {
             Reproducibility
           </h2>
           <p className="body-prose mt-5">
-            All training data manifests, feature extraction scripts, model
-            artifacts (xgb_*.json), and held-out scoring routines are
-            available on request. The atlas raster overlays on this site are
-            exported directly from the same model artifacts.
+            The training-data manifests, feature-extraction scripts, model
+            files (xgb_*.json), and held-out scoring routines are available on
+            request. The atlas map layers on this site are exported straight
+            from those same model files.
           </p>
         </div>
       </article>

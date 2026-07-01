@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     template: '%s · MSHI',
   },
   description:
-    'A three-tier monitoring stack for soil microbial respiration, the second-largest carbon flux on Earth. Centimeter-scale electrochemical biosensor and continental ML atlas.',
+    'Soil microbes breathe out carbon dioxide as they feed — the second-largest carbon flux on Earth, and one we can barely measure. This project tracks it three ways: a coin-sized bench-top biosensor, meter-scale flux chambers, and a continent-wide machine-learning map.',
   authors: [{ name: 'MSHI Research' }],
   keywords: [
     'soil respiration',
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     type: 'website',
     title: 'MSHI — Soil Microbial Respiration Research Portfolio',
     description:
-      'Centimeter biosensor and kilometer atlas for soil carbon. Asia-trained ML transfers to the US at R² = +0.145, 95% CI excludes zero.',
+      'A coin-sized soil biosensor and a continent-wide carbon map. A model trained on Asian soils still predicts soil respiration in the US it never saw — transfer R² = +0.145, with a 95% confidence interval that clears zero.',
     siteName: 'MSHI',
     locale: 'en_US',
   },

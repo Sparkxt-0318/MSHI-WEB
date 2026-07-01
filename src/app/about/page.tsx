@@ -60,37 +60,40 @@ export default function AboutPage() {
           <h2 className="font-serif text-2xl font-bold text-ink">Bio</h2>
           <div className="body-prose mt-4">
             <p>
-              Siyeong Park is a high school researcher at Shanghai American
-              School Puxi, working at the intersection of electrochemical
-              biosensing and continental-scale machine learning for terrestrial
-              carbon cycling.
+              Siyeong Park is a high-school researcher at Shanghai American
+              School Puxi, working where electrochemical biosensing meets
+              continental-scale machine learning for the carbon cycle on land.
             </p>
             <p>
-              His primary research addresses a diagnostic blind spot in soil
-              monitoring: conventional electrical-conductivity sensors cannot
-              distinguish nutrient-rich soil from toxic, saline-stressed soil,
-              leading farmers to misread degraded land as healthy. To resolve
-              this &ldquo;salinity paradox,&rdquo; he engineered a
+              His main project tackles a blind spot in soil monitoring: an
+              ordinary electrical-conductivity sensor can&rsquo;t tell
+              nutrient-rich soil from toxic, salt-stressed soil, so farmers can
+              mistake dying land for healthy land. To break that
+              &ldquo;salinity paradox&rdquo; — the reason a conductivity meter
+              can&rsquo;t tell dead salty soil from healthy soil — he built a
               three-electrode bioelectrochemical system that measures microbial
-              vitality directly — using the electrochemically active biofilms
-              formed by <em>Geobacter sulfurreducens</em> to separate the
-              faradaic biological signal from ohmic abiotic noise.
-              Chronoamperometry, cyclic voltammetry, differential pulse
-              voltammetry, and open-circuit potential together resolve a
+              life directly. It reads the current from the electrochemically
+              active biofilms that <em>Geobacter sulfurreducens</em> builds,
+              separating the true biological signal (faradaic) from the
+              soil&rsquo;s plain resistance (ohmic, abiotic). Four techniques
+              together — chronoamperometry, cyclic voltammetry, differential
+              pulse voltammetry, and open-circuit potential — pin down a
               soil&rsquo;s metabolic state, and an ensemble machine-learning
-              model condenses this into a single Microbial Soil Health Index
+              model folds it all into a single Microbial Soil Health Index
               (MSHI) from one hour of measurement.
             </p>
             <p>
-              The MSHI-Geo atlas extends this question to continental scale.
-              Trained on 615 Asian soil respiration sites and validated against
-              held-out US data, it tests whether soil microbial activity can be
-              predicted from satellite data alone — and finds that it largely
-              cannot, because the biological drivers of respiration do not
-              transfer across regions. Together the two efforts argue for a
-              three-tier monitoring framework: centimeter-scale biosensors,
-              meter-scale flux chambers, and kilometer-scale satellite models,
-              each covering the others&rsquo; blind spots.
+              The MSHI-Geo atlas takes the same question to continental scale —
+              MSHI-Geo is the project&rsquo;s continent-wide map of soil
+              respiration. Trained on 615 Asian soil-respiration sites and
+              checked against held-out US data, it asks whether soil microbial
+              activity can be predicted from satellite data alone — and finds
+              that, mostly, it can&rsquo;t, because the biological drivers of
+              respiration don&rsquo;t carry from one region to the next.
+              Together the two efforts make the case for monitoring at three
+              tiers: centimeter-scale biosensors, meter-scale flux chambers, and
+              kilometer-scale satellite models, each covering the others&rsquo;
+              blind spots.
             </p>
           </div>
 

@@ -8,7 +8,7 @@ import { siteConfig } from '@/lib/site-config';
 export const metadata: Metadata = {
   title: 'Paper',
   description:
-    'Embedded PDF and abstract for the MSHI / MSHI-Geo manuscript.',
+    'The full manuscript (embedded PDF) and a plain-language abstract for the MSHI / MSHI-Geo project.',
 };
 
 const PDF_PATH = '/paper.pdf';
@@ -42,55 +42,59 @@ export default function PaperPage() {
           <h2 className="mt-12 font-serif text-2xl font-bold text-ink">Abstract</h2>
           <div className="body-prose mt-4 max-w-prose">
             <p>
-              Soil degradation, specifically salinization, currently threatens
-              over 10% of global land and cripples the ecosystem&rsquo;s
-              second-largest carbon sink. Conventional soil health indicators
-              rely heavily on physicochemical properties, creating a critical
-              diagnostic blind spot. Standard Electrical Conductivity (EC)
-              meters cannot distinguish between nutrient-dense soil and toxic,
-              saline-stressed soil, often triggering agricultural false
-              positives. Consequently, farmers unknowingly exacerbate land
-              degradation through improper fertilizer application.
+              Soil degradation — and salinization (salt buildup) in
+              particular — now threatens over 10% of global land and is choking
+              the ecosystem&rsquo;s second-largest carbon sink. The usual ways
+              of gauging soil health lean on physical and chemical readings, and
+              that leaves a dangerous blind spot. A standard electrical
+              conductivity (EC) meter can&rsquo;t tell rich, fertile soil apart
+              from toxic, salt-stressed soil — both read as high conductivity —
+              so it throws false positives. Acting on them, farmers can add
+              fertilizer that quietly makes the degradation worse.
             </p>
             <p>
-              This research engineered a novel bioelectrochemical system (BES)
-              to resolve this &ldquo;Salinity Paradox&rdquo; by decoupling
-              physical conductivity from microbial vitality. The primary
-              objective was to replace superficial EC measurements with
-              real-time quantification of electrochemically active biofilm
-              (EAB) metabolism. A three-electrode BES utilizing a
-              high-surface-area carbon felt working electrode was deployed
-              across healthy, unhealthy, and saline-stressed soil samples.{' '}
-              <em>Geobacter sulfurreducens</em> naturally present in the soil
-              acted as the biocatalyst, performing extracellular electron
-              transfer (EET). Electrochemical techniques, including
-              chronoamperometry (CA), cyclic voltammetry (CV), and differential
-              pulse voltammetry (DPV), were utilized to isolate faradaic
-              biological signals from ohmic abiotic noise.
+              This work built a bioelectrochemical system (BES) — a cell that
+              lets living microbes trade electrons with an electrode — to
+              resolve that &ldquo;Salinity Paradox&rdquo;: the fact that a plain
+              conductivity meter can&rsquo;t separate salty-but-dead soil from
+              healthy soil. The idea is to swap that surface-level EC reading for
+              a real-time measure of how active the soil&rsquo;s living microbes
+              are, tracked through their electrochemically active biofilm (EAB).
+              The BES uses three electrodes and a high-surface-area carbon-felt
+              working electrode, and was run across healthy, unhealthy, and
+              saline-stressed soil samples. The soil&rsquo;s own{' '}
+              <em>Geobacter sulfurreducens</em> bacteria act as the biocatalyst,
+              shuttling electrons to the electrode in a process called
+              extracellular electron transfer (EET). Three electrochemical
+              techniques — chronoamperometry (CA), cyclic voltammetry (CV), and
+              differential pulse voltammetry (DPV) — separate the true
+              biological signal (faradaic) from the soil&rsquo;s plain
+              electrical resistance (ohmic, abiotic).
             </p>
             <p>
-              The CA trials revealed a critical inverse correlation: while
-              saline soils exhibited high conductivity, their biological
-              current crashed due to metabolic arrest and protein denaturation.
-              Furthermore, CV trials distinguished the faradaic capacitance of
-              healthy biofilms from the highly linear, ohmic resistance of
-              saline soils (R² = 0.92). DPV conclusively identified the
-              biological origin of the signal via a distinct OmcZ cytochrome
-              redox peak at &minus;0.13 V in healthy soil, which disappeared
-              under saline stress. To automate this analysis, an ensemble
-              machine learning and deep learning model (MSHI) was developed,
-              achieving an 87.5% accuracy, 0.909 F1 score, and 1.0 ROC-AUC
-              using just one hour of initial CA data.
+              The CA trials revealed a telling reversal: salty soils conducted
+              electricity well, yet their biological current crashed as the
+              microbes shut down and their proteins broke apart. The CV trials
+              then separated the faradaic capacitance of healthy biofilms from
+              the highly linear, ohmic resistance of saline soils (R² = 0.92).
+              DPV pinned the signal to biology: a distinct OmcZ cytochrome redox
+              peak (from a <em>Geobacter</em> electron-transfer protein) at
+              &minus;0.13 V in healthy soil, which disappeared under saline
+              stress. To automate the analysis, an ensemble machine-learning and
+              deep-learning model (MSHI) was developed, achieving an 87.5%
+              accuracy, 0.909 F1 score, and 1.0 ROC-AUC using just one hour of
+              initial CA data.
             </p>
             <p>
-              This BES successfully establishes the first real-time,
-              label-free indicator of microbial recovery capable of
-              penetrating the saline false positive. By shifting from physical
-              to metabolic analysis, this affordable technology enables
-              precision agriculture and targeted remediation efforts.
-              Ultimately, deploying this sensor empowers farmers to intervene
-              before ecosystem collapse, securing global food supplies and
-              preserving vital carbon sinks.
+              This BES establishes the first real-time, label-free indicator of
+              microbial recovery — &ldquo;label-free&rdquo; meaning it needs no
+              added dyes or reagents — that can see through the saline false
+              positive. By measuring metabolism instead of bulk physics, this
+              affordable technology opens the door to precision agriculture and
+              better-targeted remediation. Ultimately, a sensor like this could
+              let farmers step in before an ecosystem collapses, helping secure
+              global food supplies and preserve the vital carbon sinks that
+              healthy soil holds.
             </p>
           </div>
         </div>

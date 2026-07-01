@@ -90,24 +90,23 @@ export function AtlasDetailPanel({ response, onClose }: AtlasDetailPanelProps) {
         {outOfDomain ? (
           <>
             <p className="font-mono text-[0.72rem] uppercase tracking-meta text-accent">
-              Outside model training domain
+              Outside the model&apos;s training area
             </p>
             <p className="mt-3 text-[0.95rem] leading-relaxed text-ink">
-              The F+NPP model was trained on 615 Asia sites
-              (SRDB + COSORE) covering longitude{' '}
+              The F+NPP model learned from 615 Asian sites
+              (SRDB + COSORE), spanning longitude{' '}
               <span className="font-mono">25–180°E</span> and latitude{' '}
               <span className="font-mono">−10–80°N</span>.
             </p>
             <p className="mt-3 text-[0.95rem] leading-relaxed text-ink">
-              Predictions for{' '}
+              A prediction for{' '}
               <span className="font-serif font-bold">{name ?? 'this location'}</span>{' '}
-              are not scientifically supported.
+              wouldn&apos;t be scientifically supported.
             </p>
             <p className="mt-6 border-t border-rule pt-4 font-mono text-[0.65rem] leading-relaxed text-ink-soft">
-              Search returned a valid location — the globe flew there for
-              visual feedback — but no Rs-anomaly estimate is shown
-              because the geocoded point falls outside the
-              Asia training rectangle.
+              Your search found a real place — the globe flew there — but no
+              respiration-anomaly estimate is shown, because the point falls
+              outside the Asia training area.
             </p>
           </>
         ) : noPrediction ? (
@@ -116,16 +115,17 @@ export function AtlasDetailPanel({ response, onClose }: AtlasDetailPanelProps) {
               No prediction available
             </p>
             <p className="mt-3 text-[0.95rem] leading-relaxed text-ink">
-              This coordinate isn&apos;t a covered land cell in the 0.5° grid.
-              It&apos;s open ocean or inland water — or it lies in a region with
-              no MODIS coverage. Both models require MODIS NPP/LST, which on disk
-              spans only ~31% of land, so South America and most of Africa and
-              Europe have no cells (not predicted, not invented).
+              This spot isn&apos;t one of the covered land cells in the 0.5°
+              grid. It&apos;s open ocean or inland water — or it sits in a region
+              with no MODIS coverage. Both models need MODIS NPP/LST data, which
+              here covers only ~31% of land, so South America and most of Africa
+              and Europe have no cells (nothing is predicted, and nothing is
+              made up).
             </p>
             <p className="mt-6 border-t border-rule pt-4 font-mono text-[0.65rem] leading-relaxed text-ink-soft">
               The lookup covers 27,393 land cells — 20,678 in the Asia training
-              region plus 6,715 transfer cells where real MODIS exists (North
-              America, Australia, parts of Africa). Try a land area there.
+              region, plus 6,715 transfer cells where real MODIS data exists
+              (North America, Australia, parts of Africa). Try a land area there.
             </p>
           </>
         ) : (
@@ -163,9 +163,9 @@ function TransferBanner() {
         Transfer prediction · Asia-trained model
       </p>
       <p className="mt-2 text-[0.82rem] leading-relaxed text-ink">
-        The model is trained on Asian data and transfers across continents only
-        weakly (R² = +0.145). Predictions outside Asia are illustrative
-        extrapolations, not validated.{' '}
+        This model was trained on Asian data and carries to other continents
+        only weakly (R² = +0.145). Anything outside Asia is an illustrative
+        extrapolation, not a validated result.{' '}
         <a
           href="/methods"
           className="font-semibold text-bedrock-warn underline decoration-bedrock-warn/40 underline-offset-2 hover:decoration-bedrock-warn"
@@ -197,7 +197,7 @@ function PredictionBody({
   return (
     <>
       <p className="font-mono text-[0.72rem] uppercase tracking-meta text-ink-soft">
-        Predicted Rs anomaly · {prediction.configuration}
+        Predicted respiration anomaly · {prediction.configuration}
       </p>
       <p className="mt-1 font-serif text-4xl font-bold leading-none text-ink">
         {prediction.rs_anomaly >= 1 ? '+' : ''}
@@ -217,7 +217,7 @@ function PredictionBody({
       <hr className="my-6 border-rule" />
 
       <p className="font-mono text-[0.72rem] uppercase tracking-meta text-ink-soft">
-        Top-3 SHAP drivers
+        Top 3 drivers (SHAP)
       </p>
       <div className="mt-3 flex flex-col gap-4">
         {shapTop3.map((entry, i) => (
@@ -233,7 +233,7 @@ function PredictionBody({
 
       <dl className="grid grid-cols-2 gap-x-4 gap-y-4 font-mono text-[0.72rem]">
         <div>
-          <dt className="uppercase tracking-meta text-ink-soft">IGBP biome</dt>
+          <dt className="uppercase tracking-meta text-ink-soft">Vegetation (IGBP)</dt>
           <dd className="mt-1 font-serif text-base font-bold text-ink">
             {biome.igbp_class}
           </dd>
@@ -266,10 +266,10 @@ function PredictionBody({
       </dl>
 
       <p className="mt-8 border-t border-rule pt-4 font-mono text-[0.65rem] leading-relaxed text-ink-soft">
-        F+NPP XGBoost · n=615 Asia training sites (SRDB + COSORE) ·
+        F+NPP XGBoost · n=615 Asian training sites (SRDB + COSORE) ·
         Asia → US transfer R² = +0.145 (95% CI 0.026–0.241).
-        Per-cell SHAP via TreeExplainer; biome from MODIS IGBP;
-        Köppen derived from WorldClim bio01/bio12/bio14/bio17.
+        Per-cell SHAP via TreeExplainer; vegetation from MODIS IGBP;
+        Köppen zone derived from WorldClim bio01/bio12/bio14/bio17.
       </p>
     </>
   );

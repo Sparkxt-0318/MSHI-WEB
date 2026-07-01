@@ -44,9 +44,9 @@ const FEATURE_DESCRIPTIONS: Record<string, FeatureDescription> = {
   npp: {
     display: 'MODIS NPP',
     description:
-      'Satellite-derived annual net primary productivity from the MODIS MOD17A3HGF product, reflecting plant carbon fixation.',
+      'Satellite estimate of yearly net primary productivity — how much carbon plants capture — from the MODIS MOD17A3HGF product.',
     mechanism:
-      'Higher NPP feeds soil microbes more substrate via root exudates and leaf litter, driving up microbial respiration.',
+      'More plant growth feeds soil microbes more food, through root exudates and fallen leaves, so respiration climbs.',
     units: 'g C/m²/yr',
     // MOD17 NPP raw is scaled (kg C/m²/yr × 10000 = raw integer). The
     // build_atlas_lookup.py emits raw model-input units, so we divide
@@ -56,19 +56,19 @@ const FEATURE_DESCRIPTIONS: Record<string, FeatureDescription> = {
     local: (v) =>
       `At this cell: ${v.toFixed(0)} g C/m²/yr — ${
         v > 600
-          ? 'high productivity, abundant substrate for soil microbes'
+          ? 'high productivity, plenty of food for soil microbes'
           : v > 300
-          ? 'moderate productivity, typical of mid-latitude biomes'
-          : 'low productivity, limiting substrate availability'
+          ? 'moderate productivity, typical of mid-latitude regions'
+          : 'low productivity, little food to go around'
       }.`,
   },
 
   lst_day: {
     display: 'MODIS LST (day)',
     description:
-      '2020–2024 MODIS land-surface temperature averaged over daytime overpasses (MOD11A2 product).',
+      'Daytime land-surface temperature from MODIS, averaged over 2020–2024 daytime passes (the MOD11A2 product).',
     mechanism:
-      'Daytime surface temperature drives near-surface microbial enzyme rates and water-vapour-mediated substrate diffusion.',
+      'Daytime warmth sets how fast microbial enzymes work near the surface, and how easily their food moves through the moisture in the soil.',
     units: '°C',
     formatValue: (v) => v.toFixed(1),
     local: (v) =>
@@ -84,9 +84,9 @@ const FEATURE_DESCRIPTIONS: Record<string, FeatureDescription> = {
   lst_night: {
     display: 'MODIS LST (night)',
     description:
-      '2020–2024 MODIS land-surface temperature averaged over nighttime overpasses (MOD11A2 product).',
+      'Nighttime land-surface temperature from MODIS, averaged over 2020–2024 night passes (the MOD11A2 product).',
     mechanism:
-      'Night surface temperature controls the lower bound of microbial activity through the diel cycle; a cool night collapses the diurnal Rs envelope.',
+      'Nighttime warmth sets the floor on microbial activity over the day–night cycle; a cold night shuts activity down for hours at a stretch.',
     units: '°C',
     formatValue: (v) => v.toFixed(1),
     local: (v) =>
@@ -98,9 +98,9 @@ const FEATURE_DESCRIPTIONS: Record<string, FeatureDescription> = {
   lst_diurnal_range: {
     display: 'LST diurnal range',
     description:
-      'Difference between MODIS daytime and nighttime land-surface temperatures (derived: lst_day − lst_night).',
+      'The day-to-night swing in land-surface temperature (worked out as daytime minus nighttime LST).',
     mechanism:
-      'A wider diurnal range usually means clearer skies and drier surfaces — both increase the share of respiration in the daytime peak and can suppress the overall daily mean.',
+      'A bigger day–night swing usually means clearer skies and drier ground — which push more of the day’s respiration into the afternoon peak and can lower the daily average.',
     units: '°C',
     formatValue: (v) => v.toFixed(1),
     local: (v) =>
@@ -117,9 +117,9 @@ const FEATURE_DESCRIPTIONS: Record<string, FeatureDescription> = {
   bio01: {
     display: 'Mean annual temperature',
     description:
-      'WorldClim 2.1 mean annual air temperature averaged over 1970–2000.',
+      'WorldClim 2.1 average annual air temperature, over 1970–2000.',
     mechanism:
-      'Higher temperatures accelerate microbial enzyme kinetics (Q10 effect); extreme heat can also dehydrate soils and suppress activity.',
+      'Warmer temperatures speed up microbial enzymes — the well-known Q10 rule, that reaction rates rise with heat — though extreme heat can also dry the soil out and stall activity.',
     units: '°C',
     formatValue: (v) => v.toFixed(1),
     local: (v) =>
@@ -135,9 +135,9 @@ const FEATURE_DESCRIPTIONS: Record<string, FeatureDescription> = {
   bio04: {
     display: 'Temperature seasonality',
     description:
-      'WorldClim seasonality of monthly mean temperatures, computed as the standard deviation × 100 — a unitless seasonality score.',
+      'How much monthly temperatures swing across the year (WorldClim, the standard deviation × 100 — a unitless score).',
     mechanism:
-      'High seasonality usually means continental climates with long cold winters: microbial activity is concentrated into a short shoulder season, which compresses annual Rs.',
+      'Big swings usually mean continental climates with long, cold winters, squeezing microbial activity into a short window and lowering the yearly total.',
     units: '',
     formatValue: (v) => v.toFixed(0),
     local: (v) =>
@@ -153,9 +153,9 @@ const FEATURE_DESCRIPTIONS: Record<string, FeatureDescription> = {
   bio05: {
     display: 'Max temp of warmest month',
     description:
-      'WorldClim mean of the daily max temperature in the hottest month of the year.',
+      'WorldClim average of the daily high in the hottest month of the year.',
     mechanism:
-      'Sets the upper envelope on microbial enzyme rates; in arid regions it also drives soil moisture loss, which can rapidly suppress Rs.',
+      'Sets the ceiling on how fast microbial enzymes can run; in dry regions it also bakes moisture out of the soil, which can stall respiration quickly.',
     units: '°C',
     formatValue: (v) => v.toFixed(1),
     local: (v) =>
@@ -171,9 +171,9 @@ const FEATURE_DESCRIPTIONS: Record<string, FeatureDescription> = {
   bio06: {
     display: 'Min temp of coldest month',
     description:
-      'WorldClim mean of the daily min temperature in the coldest month of the year.',
+      'WorldClim average of the daily low in the coldest month of the year.',
     mechanism:
-      'Defines the depth and duration of microbial dormancy in winter; deep-cold winters shorten the active season and lower annual Rs.',
+      'Sets how deep and how long microbes go dormant in winter; brutally cold winters shorten the active season and lower the yearly total.',
     units: '°C',
     formatValue: (v) => v.toFixed(1),
     local: (v) =>
@@ -189,9 +189,9 @@ const FEATURE_DESCRIPTIONS: Record<string, FeatureDescription> = {
   bio12: {
     display: 'Annual precipitation',
     description:
-      'WorldClim total annual precipitation summed across all months.',
+      'WorldClim total yearly precipitation, summed over all months.',
     mechanism:
-      'Water availability controls microbial mobility and enzyme function; too little limits activity, too much depletes oxygen.',
+      'Water is what lets microbes move and their enzymes work; too little starves activity, too much drowns out the oxygen they need.',
     units: 'mm/yr',
     formatValue: (v) => v.toFixed(0),
     local: (v) =>
@@ -209,7 +209,7 @@ const FEATURE_DESCRIPTIONS: Record<string, FeatureDescription> = {
     description:
       'WorldClim precipitation total in the driest month of the year.',
     mechanism:
-      'Carries the dry-season floor on soil moisture; very low values translate to long soil-moisture limitation windows that interrupt Rs.',
+      'Marks how dry the driest month gets; very low values mean long stretches where a lack of moisture puts respiration on hold.',
     units: 'mm',
     formatValue: (v) => v.toFixed(0),
     local: (v) =>
@@ -223,9 +223,9 @@ const FEATURE_DESCRIPTIONS: Record<string, FeatureDescription> = {
   bio15: {
     display: 'Precip seasonality',
     description:
-      'WorldClim coefficient of variation in monthly precipitation — a unitless measure of how peaked rainfall is across the year.',
+      'How uneven rainfall is across the year (WorldClim’s coefficient of variation — a unitless score).',
     mechanism:
-      'High seasonality means flushes of microbial activity after rains (the "Birch effect"), but lower mean activity through dry months.',
+      'Very uneven rainfall brings bursts of microbial activity right after rains — the so-called Birch effect — but slower activity through the dry months.',
     units: '',
     formatValue: (v) => v.toFixed(0),
     local: (v) =>
@@ -241,9 +241,9 @@ const FEATURE_DESCRIPTIONS: Record<string, FeatureDescription> = {
   bio17: {
     display: 'Precip of driest quarter',
     description:
-      'WorldClim precipitation total for the driest consecutive 3-month period.',
+      'WorldClim precipitation total for the driest run of three consecutive months.',
     mechanism:
-      'Quarter-scale rainfall floor is what most ground-level microbial communities track over their seasonal cycle.',
+      'The rainfall low over a whole season is what most soil microbial communities actually track through the year.',
     units: 'mm',
     formatValue: (v) => v.toFixed(0),
     local: (v) =>
@@ -265,7 +265,7 @@ const FEATURE_DESCRIPTIONS: Record<string, FeatureDescription> = {
     description:
       'SoilGrids 2.0 estimate of soil organic carbon in the top 30 cm.',
     mechanism:
-      'SOC is the primary substrate pool for heterotrophic microbes; more SOC generally means more potential respiration, modulated by clay protection.',
+      'Organic carbon is the main food supply for the microbes that break it down; more of it usually means more potential respiration, though clay can lock some of it away.',
     units: 'g/kg',
     formatValue: (v) => v.toFixed(1),
     local: (v) =>
@@ -283,7 +283,7 @@ const FEATURE_DESCRIPTIONS: Record<string, FeatureDescription> = {
     description:
       'SoilGrids 2.0 estimate of clay fraction in the top 30 cm (% by weight).',
     mechanism:
-      'Clay protects organic carbon from microbial access via mineral binding — high-clay soils often show suppressed respiration despite holding more SOC. The clay–Rs correlation actually flips sign between Asia (+0.302) and US (−0.048), one of the key findings of this work.',
+      'Clay locks organic carbon away from microbes by binding it to mineral surfaces, so clay-rich soils often respire less even while holding more carbon. Strikingly, the clay–respiration relationship flips sign between Asia (+0.302) and the US (−0.048) — one of this project’s key findings.',
     units: '%',
     formatValue: (v) => v.toFixed(1),
     local: (v) =>
@@ -301,7 +301,7 @@ const FEATURE_DESCRIPTIONS: Record<string, FeatureDescription> = {
     description:
       'SoilGrids 2.0 estimate of sand fraction in the top 30 cm (% by weight).',
     mechanism:
-      'Sand-dominated soils have less water-holding capacity and weaker organic-matter protection — usually associated with lower SOC but faster turnover of what is there.',
+      'Sandy soils hold less water and shield organic matter poorly — usually less carbon overall, but what is there breaks down faster.',
     units: '%',
     formatValue: (v) => v.toFixed(1),
     local: (v) =>
