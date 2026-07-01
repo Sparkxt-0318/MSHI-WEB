@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     template: '%s · MSHI',
   },
   description:
-    'Soil microbes breathe out carbon dioxide as they feed — the second-largest carbon flux on Earth, and one we can barely measure. This project tracks it three ways: a coin-sized bench-top biosensor, meter-scale flux chambers, and a continent-wide machine-learning map.',
+    'Soil microbes breathe out carbon dioxide as they feed — the second-largest flux in the terrestrial carbon cycle, exceeded only by photosynthesis, and one we can barely measure. This project tracks it three ways: a coin-sized bench-top biosensor, meter-scale flux chambers, and a continent-wide machine-learning map.',
   authors: [{ name: 'MSHI Research' }],
   keywords: [
     'soil respiration',

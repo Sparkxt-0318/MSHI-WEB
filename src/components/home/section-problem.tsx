@@ -20,10 +20,10 @@ export function SectionProblem() {
                 Each year the world&apos;s soils breathe roughly{' '}
                 <strong className="font-semibold">91 Pg C yr⁻¹</strong> back
                 into the air — 91 petagrams of carbon, and a single petagram is
-                a billion tonnes. It is one of the largest carbon flows on the
-                planet: second only to the oceans&rsquo; exchange, and within
-                an order of magnitude of all the carbon the world&apos;s plants
-                capture through photosynthesis (their gross primary
+                a billion tonnes. It is the second-largest flux in the
+                terrestrial carbon cycle, exceeded only by photosynthesis —
+                within an order of magnitude of all the carbon the
+                world&apos;s plants capture through it (their gross primary
                 production). Yet the continental models that try to map it{' '}
                 <span className="whitespace-nowrap">
                   (Hashimoto&nbsp;2015, Warner&nbsp;2019, Stell&nbsp;2021)
